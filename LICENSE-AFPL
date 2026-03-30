@@ -1,0 +1,110 @@
+The following files in this repository are derived from tavern_helper_template
+by 青空莉 (StageDog), licensed under the Aladdin Free Public License (AFPL) v9:
+
+  webpack.config.ts
+  postcss.config.js
+  dump_schema.ts
+  global.d.ts
+  util/common.ts
+  util/mvu.ts
+  util/script.ts
+  util/streaming.ts
+  util/iframe_srcdoc.html
+
+Original repository: https://github.com/StageDog/tavern_helper_template
+
+These files have been modified for use in this project (React adaptation, versioned
+output, etc.). Per AFPL terms, derivative works must be distributed under the same
+license at no charge.
+
+The full text of the Aladdin Free Public License (AFPL) Version 9 is available at:
+https://github.com/StageDog/tavern_helper_template/blob/main/LICENSE
+
+================================================================================
+
+Aladdin Free Public License (AFPL) Version 9
+
+Copyright (C) 1994, 1995, 1997, 1998, 1999, 2000 Aladdin Enterprises,
+Menlo Park, California, U.S.A. All rights reserved.
+
+NOTE: This License is not the same as any of the GNU Licenses published by
+the Free Software Foundation. Its terms are substantially different from
+those of the GNU Licenses. If you are familiar with the GNU Licenses,
+please read this license with extra care.
+
+This License is not an Open Source license: among other things, it places
+restrictions on distribution of the Program, specifically including sale of
+the Program.
+
+0. Subject Matter
+
+This License applies to the computer program known as "tavern_helper_template".
+The "Program", below, refers to such program. The Program is a copyrighted work
+whose copyright is held by 青空莉 (StageDog) (the "Licensor").
+
+1. Licenses.
+
+Licensor hereby grants you the following rights, provided that you comply with
+all of the restrictions set forth in this License and provided, further, that
+you distribute an unmodified copy of this License with the Program:
+
+(a) You may copy and distribute literal (i.e., verbatim) copies of the
+Program's source code as you receive it throughout the world, in any medium.
+
+(b) You may modify the Program, create works based on the Program and
+distribute copies of such throughout the world, in any medium.
+
+2. Restrictions.
+
+(a) Distribution of the Program or any work based on the Program by a
+commercial organization to any third party is prohibited if any payment is
+made in connection with such distribution, whether directly or indirectly.
+
+(b) Activities other than copying, distribution and modification of the
+Program are not subject to this License and they are outside its scope.
+
+(c) You must meet all of the following conditions with respect to any work
+that you distribute or publish that in whole or in part contains or is
+derived from the Program or any part thereof:
+
+  (i) If you have modified the Program, you must cause the Work to carry
+  prominent notices stating that you have modified the Program's files and
+  the date of any change.
+
+  (ii) You must cause the Work to be licensed as a whole and at no charge
+  to all third parties under the terms of this License;
+
+  (iii) You must accompany the Work with the complete corresponding
+  machine-readable source code.
+
+  (iv) You may not impose any further restrictions on the recipient's
+  exercise of the rights granted herein.
+
+3. Reservation of Rights.
+
+No rights are granted to the Program except as expressly set forth herein.
+
+4. Other Restrictions.
+
+If the distribution and/or use of the Program is restricted in certain
+countries for any reason, Licensor may add an explicit geographical
+distribution limitation excluding those countries.
+
+5. Limitations.
+
+THE PROGRAM IS PROVIDED TO YOU "AS IS," WITHOUT WARRANTY. THERE IS NO
+WARRANTY FOR THE PROGRAM, EITHER EXPRESSED OR IMPLIED, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS. THE ENTIRE
+RISK AS TO THE QUALITY AND PERFORMANCE OF THE PROGRAM IS WITH YOU.
+
+IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING WILL
+LICENSOR, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR REDISTRIBUTE THE PROGRAM
+AS PERMITTED ABOVE, BE LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL,
+SPECIAL, INCIDENTAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR
+INABILITY TO USE THE PROGRAM.
+
+6. General.
+
+This License is governed by the laws of the State of California, U.S.A.,
+excluding choice of law rules.

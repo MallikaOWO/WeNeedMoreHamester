@@ -5,18 +5,10 @@ node_modules/
 # 构建产物
 dist/
 
-# 打包与同步配置
+# 酒馆同步配置（含本地路径，不上传）
 tavern_sync.yaml
 tavern_sync.mjs
-webpack.config.ts
-tsconfig.json
-postcss.config.js
-dump_schema.ts
-package.json
-pnpm-lock.yaml
-global.d.ts
 
-# 酒馆助手类型与工具
+# 酒馆助手类型定义（来自酒馆助手仓库，不上传）
 @types/
-util/
 

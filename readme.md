@@ -27,19 +27,29 @@ SillyTavern 同层前端角色卡 — 经营一座梦幻般的宠物鼠乐园，
 
 ### 写卡工具
 
-- **青空莉** — [tavern_helper_template](https://github.com/StageDog/tavern_helper_template/)：tavern_sync 同步工具、前端开发模板
+- **青空莉** — [tavern_helper_template](https://github.com/StageDog/tavern_helper_template/)：tavern_sync 同步工具、前端开发模板、构建工具链
 
 ### 二改脚本
 
 - 自动更新角色卡脚本（原作：青空莉）
 
+## 构建工具链说明
+
+本项目的构建工具链（webpack 配置、PostCSS 配置、schema 转换脚本、全局类型声明、`util/` 工具函数等）源自 [tavern_helper_template](https://github.com/StageDog/tavern_helper_template/)，并进行了 React 适配和定制化修改。这些文件以 [Aladdin Free Public License (AFPL)](LICENSE-AFPL) 授权，与原作保持一致。
+
+涉及的文件详见 [LICENSE-AFPL](LICENSE-AFPL)。
+
 ## 许可证
 
-本项目采用双许可证：
+本项目采用多许可证：
+
+### 构建工具链 — Aladdin Free Public License (AFPL)
+
+源自 tavern_helper_template 的构建配置和工具函数，详见 [LICENSE-AFPL](LICENSE-AFPL)。
 
 ### 代码部分 — MIT License
 
-包括前端源代码（`src/`）、构建脚本、工具函数等。
+包括前端源代码（`src/`）等本项目原创代码。
 
 ```
 MIT License
