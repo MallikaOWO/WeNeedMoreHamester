@@ -1,1 +1,22 @@
-/venv_name
+# 依赖与环境
+node_modules/
+/venv_name/
+
+# 构建产物
+dist/
+
+# 打包与同步配置
+tavern_sync.yaml
+tavern_sync.mjs
+webpack.config.ts
+tsconfig.json
+postcss.config.js
+dump_schema.ts
+package.json
+pnpm-lock.yaml
+global.d.ts
+
+# 酒馆助手类型与工具
+@types/
+util/
+

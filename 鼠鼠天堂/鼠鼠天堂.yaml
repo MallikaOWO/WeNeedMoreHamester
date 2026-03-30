@@ -1,0 +1,23 @@
+# yaml-language-server: $schema=https://testingcf.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/character.zh.json
+头像: 头像
+版本: ""
+作者: ""
+备注: ""
+
+第一条消息:
+  - 文件: 第一条消息\0
+
+角色描述: 这里是鼠鼠乐园！
+
+锚点: {}
+
+世界书名称: 鼠鼠乐园
+条目: []
+
+扩展字段:
+  正则: []
+
+  酒馆助手:
+    脚本库: []
+
+    变量: {}
