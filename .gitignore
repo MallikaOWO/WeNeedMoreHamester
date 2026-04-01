@@ -2,9 +2,6 @@
 node_modules/
 /venv_name/
 
-# 构建产物
-dist/
-
 # 酒馆同步配置（含本地路径，不上传）
 tavern_sync.yaml
 tavern_sync.mjs
