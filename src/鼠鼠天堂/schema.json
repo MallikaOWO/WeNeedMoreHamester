@@ -1,0 +1,349 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "energy": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "energyCap": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "stardust": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "turn": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "happiness": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "hamsters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "breed": {
+            "type": "string"
+          },
+          "personality": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mood": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "stamina": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "preference": {
+            "type": "string"
+          },
+          "basePower": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "story": {
+            "type": "string"
+          },
+          "assignedTo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "memory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "breed",
+          "personality",
+          "mood",
+          "stamina",
+          "preference",
+          "basePower",
+          "story",
+          "assignedTo",
+          "memory"
+        ]
+      }
+    },
+    "facilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "capacity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "occupants": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "managedBy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requiredAngelLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "level",
+          "capacity",
+          "occupants",
+          "managedBy",
+          "requiredAngelLevel"
+        ]
+      }
+    },
+    "angels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "manageDomain": {
+            "type": "string",
+            "enum": [
+              "life",
+              "power",
+              "stardust",
+              "social",
+              "special"
+            ]
+          },
+          "assignedFacility": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "skillId": {
+                  "type": "string"
+                },
+                "level": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 9007199254740991
+                },
+                "cooldownLeft": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "unlockedAtAngelLevel": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                }
+              },
+              "required": [
+                "skillId",
+                "level",
+                "cooldownLeft",
+                "unlockedAtAngelLevel"
+              ]
+            }
+          },
+          "memory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/__schema0"
+            }
+          },
+          "exp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "level",
+          "manageDomain",
+          "assignedFacility",
+          "skills",
+          "memory",
+          "exp"
+        ]
+      }
+    },
+    "achievements": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "pendingEvents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "relatedCharacters": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                },
+                "energyDelta": {
+                  "type": "number"
+                },
+                "stardustDelta": {
+                  "type": "number"
+                },
+                "moodDelta": {
+                  "type": "number"
+                },
+                "moodTarget": {
+                  "type": "string"
+                },
+                "isSilly": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "label",
+                "energyDelta",
+                "stardustDelta",
+                "moodDelta"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "relatedCharacters",
+          "options"
+        ]
+      }
+    }
+  },
+  "required": [
+    "energy",
+    "energyCap",
+    "stardust",
+    "turn",
+    "happiness",
+    "hamsters",
+    "facilities",
+    "angels",
+    "achievements",
+    "pendingEvents"
+  ],
+  "$defs": {
+    "__schema0": {
+      "type": "object",
+      "properties": {
+        "turn": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "text": {
+          "type": "string"
+        },
+        "important": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "turn",
+        "text",
+        "important"
+      ]
+    }
+  }
+}

@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=../../schema.json
+# 鼠鼠天堂初始游戏状态
+# 此变量由代码 createInitialGameState() 生成，此处仅为 MVU 初始化备份
+energy: 50
+energyCap: 100
+stardust: 0
+turn: 0
+happiness: 70
+hamsters: []
+facilities: []
+angels:
+  - id: mianhua
+    name: 棉花
+    level: 1
+    manageDomain: life
+    assignedFacility: null
+    skills:
+      - skillId: heal_touch
+        level: 1
+        cooldownLeft: 0
+        unlockedAtAngelLevel: 1
+      - skillId: warm_barrier
+        level: 1
+        cooldownLeft: 0
+        unlockedAtAngelLevel: 3
+    memory: []
+    exp: 0
+  - id: luosi
+    name: 螺丝
+    level: 1
+    manageDomain: power
+    assignedFacility: null
+    skills:
+      - skillId: energy_overload
+        level: 1
+        cooldownLeft: 0
+        unlockedAtAngelLevel: 1
+      - skillId: emergency_repair
+        level: 1
+        cooldownLeft: 0
+        unlockedAtAngelLevel: 3
+    memory: []
+    exp: 0
+  - id: xingxing
+    name: 星星
+    level: 1
+    manageDomain: stardust
+    assignedFacility: null
+    skills:
+      - skillId: stardust_sense
+        level: 1
+        cooldownLeft: 0
+        unlockedAtAngelLevel: 1
+      - skillId: stellar_blessing
+        level: 1
+        cooldownLeft: 0
+        unlockedAtAngelLevel: 3
+    memory: []
+    exp: 0
+  - id: paofu
+    name: 泡芙
+    level: 1
+    manageDomain: social
+    assignedFacility: null
+    skills:
+      - skillId: lucky_hunch
+        level: 1
+        cooldownLeft: 0
+        unlockedAtAngelLevel: 1
+      - skillId: lucky_streak
+        level: 1
+        cooldownLeft: 0
+        unlockedAtAngelLevel: 3
+    memory: []
+    exp: 0
+achievements: []
+pendingEvents: []

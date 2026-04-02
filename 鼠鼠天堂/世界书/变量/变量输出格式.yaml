@@ -1,0 +1,61 @@
+---
+# 鼠鼠天堂 — AI 输出格式
+# 本游戏不使用标准 MVU 的 UpdateVariable 格式。
+# AI 按以下自定义格式输出，由代码解析。
+
+输出格式说明:
+  rule:
+    - 回复必须包含叙事文本和结构化事件数据
+    - 事件数据使用 XML 标签包裹，便于代码解析
+    - 叙事文本放在标签之外，是玩家看到的内容
+    - 恶搞/负面选项用搞笑语气描述，资源扣除量应小于正常收益
+
+  format: |-
+    （叙事文本：描述本回合乐园的日常氛围、角色互动等，温馨治愈基调）
+
+    <event id="${唯一事件ID}">
+    <description>${事件叙事描述}</description>
+    <related>${关联角色ID，逗号分隔}</related>
+    <option label="${选项文字}" energy="${±数值}" stardust="${±数值}" mood="${±数值}" mood_target="${角色ID或空}" silly="${true/false}"/>
+    <option label="${选项文字}" energy="${±数值}" stardust="${±数值}" mood="${±数值}"/>
+    <option label="${选项文字}" energy="${±数值}" stardust="${±数值}" mood="${±数值}" silly="true"/>
+    </event>
+
+    <event id="${唯一事件ID}">
+    ...
+    </event>
+
+    <memory character="${角色ID}">${该角色的记忆摘要文本，一句话概括本回合发生的事}</memory>
+
+    （如果有收养事件，附带新鼠鼠数据：）
+    <new_hamster>
+    <id>${唯一ID}</id>
+    <name>${名字}</name>
+    <breed>${品种ID}</breed>
+    <personality>${性格标签，逗号分隔}</personality>
+    <basePower>${基础产能数值}</basePower>
+    <preference>${偏好设施类型ID}</preference>
+    <story>${背景故事}</story>
+    </new_hamster>
+
+  example: |-
+    阳光洒在跑轮发电站的透明罩上，布丁正卖力地踩着轮子，小短腿飞速运转。棉花站在一旁温柔地给她加油，而螺丝则在旁边检查发电机的仪表盘，嘴里嘟囔着"转速还不够快"。
+
+    <event id="evt_1">
+    <description>布丁跑着跑着突然打了个喷嚏，跑轮猛地一晃，她整只鼠飞了出去！</description>
+    <related>hamster_1</related>
+    <option label="赶紧冲过去接住她" energy="5" stardust="0" mood="10" mood_target="hamster_1"/>
+    <option label="让她体验一下飞翔的感觉" energy="12" stardust="0" mood="-5" mood_target="hamster_1"/>
+    <option label="你也跳上跑轮一起转" energy="-3" stardust="0" mood="15" silly="true"/>
+    </event>
+
+    <event id="evt_2">
+    <description>星星突然抬起头，紫色的眼睛闪了闪："……地下……有什么在发光。"</description>
+    <related>xingxing</related>
+    <option label="派螺丝去挖掘" energy="0" stardust="8" mood="0"/>
+    <option label="全员寻宝大会！" energy="-10" stardust="3" mood="10"/>
+    <option label="假装没听到" energy="0" stardust="0" mood="0"/>
+    </event>
+
+    <memory character="hamster_1">布丁从跑轮上飞出去了，主人冲过去接住了她</memory>
+    <memory character="xingxing">感应到地下有神秘光源，向主人报告了</memory>
