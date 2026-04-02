@@ -1,0 +1,131 @@
+// 3.3.3 设施页 — 已建设施 + 建造/升级
+
+import React, { useState } from 'react';
+import { useStore } from '../store';
+import { FACILITY_DEFS, getFacilityDef, getUpgradeCost } from '../../../data/facilities';
+import { canBuild, canUpgrade } from '../../../engine/facility';
+
+const Facilities: React.FC = () => {
+  const { state, dispatch } = useStore();
+  const game = state.game;
+  const [showBuild, setShowBuild] = useState(false);
+
+  return (
+    <div>
+      {/* 已建设施 */}
+      {game.facilities.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 24, marginBottom: 12 }}>
+          还没有建造任何设施
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+          {game.facilities.map(f => {
+            const def = getFacilityDef(f.type);
+            const name = def?.name ?? f.type;
+            const manager = f.managedBy
+              ? game.angels.find(a => a.id === f.managedBy)?.name ?? '未知'
+              : '无';
+            const upgradeCheck = canUpgrade(game, f.id);
+            const cost = def ? getUpgradeCost(def, f.level) : null;
+
+            return (
+              <div key={f.id} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontWeight: 600 }}>{name}</span>
+                    <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 6 }}>Lv.{f.level}</span>
+                  </div>
+                  {def?.category === 'play' && (
+                    <span style={{ fontSize: 12, color: 'var(--color-energy)' }}>⚡ {def.basePower}/回合</span>
+                  )}
+                </div>
+
+                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                  {f.capacity > 0 && <span>容量: {f.occupants.length}/{f.capacity} | </span>}
+                  管理: {manager}
+                  {def?.specialEffect && <span> | {def.specialEffect}</span>}
+                </div>
+
+                {/* 居民列表 */}
+                {f.occupants.length > 0 && (
+                  <div style={{ fontSize: 12, marginTop: 4 }}>
+                    居民: {f.occupants.map(id => game.hamsters.find(h => h.id === id)?.name ?? id).join('、')}
+                  </div>
+                )}
+
+                {/* 升级按钮 */}
+                {f.level < 3 && (
+                  <div style={{ marginTop: 6 }}>
+                    <button
+                      className="btn btn-sm"
+                      disabled={!upgradeCheck.ok}
+                      onClick={() => dispatch({ type: 'UPGRADE_FACILITY', facilityId: f.id })}
+                      title={upgradeCheck.reason}
+                    >
+                      升级 {cost && `(⚡${cost.energy}${cost.stardust > 0 ? ` ✨${cost.stardust}` : ''})`}
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 建造按钮 */}
+      <button
+        className="btn btn-primary"
+        style={{ width: '100%', marginBottom: 8 }}
+        onClick={() => setShowBuild(!showBuild)}
+      >
+        {showBuild ? '收起' : '建造新设施'}
+      </button>
+
+      {/* 建造列表 */}
+      {showBuild && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {(['play', 'living', 'function'] as const).map(cat => {
+            const catLabel = { play: '玩耍', living: '生活', function: '功能' }[cat];
+            const defs = FACILITY_DEFS.filter(d => d.category === cat);
+            return (
+              <div key={cat}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 4 }}>{catLabel}设施</div>
+                {defs.map(def => {
+                  const check = canBuild(game, def.type);
+                  return (
+                    <div
+                      key={def.type}
+                      className="card"
+                      style={{ marginBottom: 4, opacity: check.ok ? 1 : 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                    >
+                      <div>
+                        <span style={{ fontWeight: 500 }}>{def.name}</span>
+                        <div style={{ fontSize: 11, color: '#6b7280' }}>
+                          容量:{def.capacity} | ⚡{def.cost.energy}{def.cost.stardust > 0 ? ` ✨${def.cost.stardust}` : ''} | 天使Lv.{def.requiredAngelLevel}+
+                          {def.specialEffect && ` | ${def.specialEffect}`}
+                        </div>
+                      </div>
+                      <button
+                        className="btn btn-sm btn-primary"
+                        disabled={!check.ok}
+                        onClick={() => {
+                          dispatch({ type: 'BUILD_FACILITY', facilityType: def.type });
+                          setShowBuild(false);
+                        }}
+                        title={check.reason}
+                      >
+                        建造
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default Facilities;

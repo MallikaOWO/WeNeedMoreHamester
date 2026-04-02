@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://testingcf.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/preset.zh.json
+设置:
+  上下文长度: 2000000
+  最大回复token数: 30000
+  流式传输: true
+  温度: 1
+  频率惩罚: 0
+  存在惩罚: 0
+  top_p: 1
+  压缩系统消息: false
+  推理强度: 高
+  请求思维链: true
+  请求图片: false
+  启用函数调用: false
+  启用网络搜索: false
+  允许发送图片: 禁用
+  允许发送视频: false
+  角色名称前缀: 默认
+
+锚点: {}
+
+提示词:
+  - 名称: 身份
+    启用: true
+    角色: 系统
+    内容: |-
+      # 身份定义
+      -你是“鼠鼠天堂”的系统管理员，负责维护整个系统的运转……
+      - 你应该仔细阅读以下设定，根据要求演绎鼠鼠，制造事件，更新变量
+
+  - id: 角色定义之前
+    启用: true
+
+  - id: 玩家描述
+    启用: true
+
+  - id: 角色描述
+    启用: true
+
+  - id: 角色性格
+    启用: true
+
+  - id: 情景
+    启用: true
+
+  - 名称: Enhance Definitions
+    启用: false
+    角色: 系统
+    内容: If you have more knowledge of {{char}}, add to the character's lore and
+      personality to enhance them but keep the Character Sheet's definitions
+      absolute.
+
+  - 名称: Auxiliary Prompt
+    启用: true
+    角色: 系统
+    内容: ""
+
+  - id: 角色定义之后
+    启用: true
+
+  - id: 对话示例
+    启用: true
+
+  - id: 聊天记录
+    启用: true
+
+  - 名称: Post-History Instructions
+    启用: true
+    角色: 系统
+    内容: ""
+
+未添加的提示词: []
+
+扩展字段:
+  正则: []
+
+  酒馆助手:
+    脚本库: []
+
+    变量: {}

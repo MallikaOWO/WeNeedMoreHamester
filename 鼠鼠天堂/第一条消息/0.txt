@@ -1,7 +1,7 @@
 ```
 <body>
 <script>
-$('body').load('http://127.0.0.1:5500/WeNeedMoreHamester/dist/%E9%BC%A0%E9%BC%A0%E5%A4%A9%E5%A0%82/%E7%95%8C%E9%9D%A2/%E4%B8%BB%E7%95%8C%E9%9D%A2/index.html')
+$('body').load('https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/0.0.0/鼠鼠天堂/界面/主界面/index.html')
 </script>
 </body>
 ```

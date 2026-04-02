@@ -340,3 +340,49 @@ Phase 6 (打磨)
 ```
 
 Phase 3 和 Phase 5 可以并行推进：前端不依赖具体提示词内容，提示词不依赖 UI 实现。两者在 Phase 4 汇合。
+
+---
+
+## 工作记录
+
+### Phase 0 ✅
+
+- `src/鼠鼠天堂/schema.ts` — zod v4 定义 GameState 及所有子类型，导出 `Schema` 供 dump 和 MVU 使用，导出各类型的 TS type
+- `src/鼠鼠天堂/data/` — 6 个静态数据文件：
+  - `skills.ts`(8技能，每天使2个) → `angels.ts`(4预设+???，`getStarterAngels()`) → `facilities.ts`(13设施，含升级费用计算) → `achievements.ts`(8成就，含 check 函数) → `breeds.ts`(8品种) → `personalities.ts`(8性格，3个有偏好设施关联)
+- `src/鼠鼠天堂/data/init.ts` — `createInitialGameState()` → ⚡50/100 ✨0 💛70 回合0 4天使Lv.1
+- `pnpm dump` → `schema.json` 生成正常（需 `node --experimental-strip-types` 或 `tsx`，原始 `node dump_schema.ts` 在当前环境报错）
+
+### Phase 1 ✅
+
+`src/鼠鼠天堂/engine/` 7个模块，全部纯函数 GameState→GameState：
+
+- `turn.ts` — `settleTurn`: 设施产能(等级×偏好×心情乘数)、体力消耗(15/回合，≤20自动回窝)、休息恢复(20，食堂×1.5)、生活设施心情回复、星尘祭坛(2/回合)、全局心情=平均值
+- `facility.ts` — `canBuild/buildFacility`(自动分配同方向空闲天使)、`canUpgrade/upgradeFacility`(天使等级门槛)、`assignAngelToFacility`
+- `angel.ts` — `canLevelUp`(星尘+设施等级前提：Lv2需管理设施,Lv3需Lv2设施,Lv4需2个Lv3,Lv5需全部Lv3+)、`levelUpAngel`、`useSkill`(8种effectType分支)、`tickCooldowns`
+- `hamster.ts` — `adoptHamster`(费用15⚡，住所容量检查)、`assignHamster/unassignHamster`
+- `event.ts` — `rollEventSlots`(2-3个，日常50%/机遇30%/挑战15%/特殊5%)、`applyEventChoice`(资源变更+心情，支持全局/指定角色)、`validateEventOptions`(负面≤10%当前资源)
+- `memory.ts` — `appendMemory/compressMemory`(鼠鼠15条上限，天使20条，保留important)、`getMemoryForPrompt`(格式化输出)、`appendMemoryToState`
+- `achievement.ts` — `checkAchievements` → 返回新解锁列表+发放星尘奖励
+
+集成验证跑通完整流程：建造→收养→分配→结算→事件→记忆→成就→技能→Schema校验PASSED。
+
+### Phase 2 ✅
+
+MVU 集成，关键设计：**AI 不用标准 JSONPatch 更新变量，代码管理全部 GameState，AI 只输出自定义 XML 事件格式**。
+
+角色卡目录 `鼠鼠天堂/`：
+- `世界书/变量/initvar.yaml` — 初始状态 YAML（与 createInitialGameState 一致）
+- `世界书/变量/变量列表.txt` — `{{format_message_variable::stat_data}}`
+- `世界书/变量/变量更新规则.yaml` — 告知 AI 状态含义 + "你不需要输出变量更新指令"
+- `世界书/变量/变量输出格式.yaml` — 定义 `<event>/<option>/<memory>/<new_hamster>` XML 标签格式
+- `鼠鼠天堂.yaml` — 添加世界书条目（initvar/列表/规则/输出格式）+ 脚本库（MVU/变量结构）
+
+源码 `src/鼠鼠天堂/`：
+- `脚本/MVU/index.ts` — 加载 MVU 框架
+- `脚本/变量结构/index.ts` — `registerMvuSchema(Schema)`
+- `bridge/state.ts` — `loadGameState`(从MVU读取+Schema.parse) / `saveGameState`(写回MVU) / `getStateForPrompt`(资源+角色简表+设施简表)
+- `bridge/prompt.ts` — `buildTurnPrompt`(状态+事件指令+按需记忆) / `buildInteractionPrompt`(角色互动专用)
+
+所有 URL 已从 localhost 改为 jsdelivr CDN (`testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/0.0.0/...`)。
+webpack 构建通过，脚本输出到 `dist/0.0.0/鼠鼠天堂/脚本/`。

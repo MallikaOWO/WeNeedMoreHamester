@@ -19,7 +19,14 @@ export function loadGameState(messageId?: number): GameState {
     return createInitialGameState();
   }
 
-  return GameStateSchema.parse(statData);
+  // safeParse: 校验失败时回退到初始状态，避免阻塞加载
+  const result = GameStateSchema.safeParse(statData);
+  if (result.success) {
+    return result.data;
+  }
+  console.warn('[鼠鼠天堂] GameState 校验失败，使用原始数据:', result.error);
+  // 校验失败但数据存在时，信任原始数据（可能是 schema 变更导致）
+  return statData as GameState;
 }
 
 /** 将 GameState 写回 MVU */

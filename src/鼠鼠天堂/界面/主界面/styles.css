@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+/* 功能性基础样式，美化留给后期 */
+
+:root {
+  --color-energy: #f59e0b;
+  --color-stardust: #8b5cf6;
+  --color-mood: #ef4444;
+  --color-happiness: #ec4899;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  color: #333;
+  background: #faf7f2;
+}
+
+/* 进度条 */
+.bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* 卡片基础 */
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+/* 恶搞选项 */
+.silly-option {
+  border: 2px dashed #f59e0b;
+  background: #fffbeb;
+}
+
+/* 标签栏 */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  background: #e5e7eb;
+  border-radius: 8px;
+  padding: 2px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 8px 4px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+.tab-btn:hover {
+  color: #374151;
+}
+.tab-btn.active {
+  background: white;
+  color: #111827;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* 按钮 */
+.btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+.btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+.btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+.btn-sm {
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+/* 资源变化标注 */
+.delta-pos { color: #16a34a; }
+.delta-neg { color: #dc2626; }
+.delta-zero { color: #9ca3af; }
