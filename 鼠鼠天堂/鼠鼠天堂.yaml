@@ -186,7 +186,7 @@
         ```
         <body>
         <script>
-        $('body').load('https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/0.0.0/鼠鼠天堂/界面/主界面/index.html')
+        $('body').load('https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/界面/主界面/index.html')
         </script>
         </body>
         ```
@@ -211,6 +211,6 @@
         启用: true
         类型: 脚本
         内容: |-
-          import 'https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/0.0.0/鼠鼠天堂/脚本/变量结构/index.js';
+          import 'https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/脚本/变量结构/index.js';
 
     变量: {}

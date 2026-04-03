@@ -190,7 +190,7 @@ function parse_configuration(entry: Entry): (env: any, argv: any) => webpack.Con
   const script_filepath = path.parse(entry.script);
 
   return (env, argv) => {
-    const version = env?.version ?? '0.0.0';
+    const version = env?.version ?? '';
     return {
     experiments: {
       outputModule: true,
@@ -212,7 +212,7 @@ function parse_configuration(entry: Entry): (env: any, argv: any) => webpack.Con
       path: path.join(
         import.meta.dirname,
         'dist',
-        version,
+        ...(version ? [version] : []),
         path.relative(import.meta.dirname, script_filepath.dir).replace(/^[^\\/]+[\\/]/, ''),
       ),
       chunkFilename: `${script_filepath.name}.[contenthash].chunk.js`,
