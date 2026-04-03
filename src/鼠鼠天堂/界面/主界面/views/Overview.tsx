@@ -31,14 +31,14 @@ const ResourceBar: React.FC<{
 /** 计算本回合预估产能 */
 function estimateProduction(game: ReturnType<typeof useStore>['state']['game']): number {
   let total = 0;
-  for (const f of game.facilities) {
+  for (const f of Object.values(game.facilities)) {
     const def = FACILITY_DEFS.find(d => d.type === f.type);
     if (!def || def.basePower <= 0) continue;
     if (!f.managedBy) continue;
-    const occupants = f.occupants.length;
-    if (occupants === 0) continue;
+    const occupantCount = Object.keys(f.occupants).length;
+    if (occupantCount === 0) continue;
     const levelMult = 1 + (f.level - 1) * 0.3;
-    total += Math.round(def.basePower * occupants * levelMult);
+    total += Math.round(def.basePower * occupantCount * levelMult);
   }
   // 心情乘数
   const moodMult = 0.5 + (game.happiness / 100) * 0.5;
@@ -49,7 +49,11 @@ const Overview: React.FC = () => {
   const { state, dispatch } = useStore();
   const game = state.game;
   const estimated = estimateProduction(game);
-  const pendingCount = game.pendingEvents.length;
+  const pendingCount = Object.keys(game.pending_events).length;
+  const hamsterCount = Object.keys(game.hamsters).length;
+  const facilityCount = Object.keys(game.facilities).length;
+  const busyAngels = Object.values(game.angels).filter(a => a.assignedFacility).length;
+  const unlockedAchievements = Object.keys(game.achievements).filter(k => game.achievements[k]);
 
   return (
     <div>
@@ -57,7 +61,7 @@ const Overview: React.FC = () => {
       <div className="card" style={{ marginBottom: 12, textAlign: 'center' }}>
         <div style={{ fontSize: 20, fontWeight: 700 }}>回合 {game.turn}</div>
         <div style={{ color: '#6b7280', fontSize: 12, marginTop: 4 }}>
-          {game.hamsters.length} 只鼠鼠 | {game.facilities.length} 个设施 | {game.angels.filter(a => a.assignedFacility).length} 天使值班
+          {hamsterCount} 只鼠鼠 | {facilityCount} 个设施 | {busyAngels} 天使值班
         </div>
       </div>
 
@@ -73,7 +77,7 @@ const Overview: React.FC = () => {
         <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>下回合预估</div>
         <div style={{ display: 'flex', gap: 16 }}>
           <span>⚡ +{estimated}</span>
-          {game.facilities.some(f => f.type === 'stardust_altar') && <span>✨ +2</span>}
+          {Object.values(game.facilities).some(f => f.type === 'stardust_altar') && <span>✨ +2</span>}
         </div>
       </div>
 
@@ -85,11 +89,11 @@ const Overview: React.FC = () => {
       )}
 
       {/* 成就 */}
-      {game.achievements.length > 0 && (
+      {unlockedAchievements.length > 0 && (
         <div className="card" style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>已解锁成就</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {game.achievements.map(a => (
+            {unlockedAchievements.map(a => (
               <span key={a} style={{ background: '#f3f4f6', padding: '2px 8px', borderRadius: 4, fontSize: 12 }}>{a}</span>
             ))}
           </div>

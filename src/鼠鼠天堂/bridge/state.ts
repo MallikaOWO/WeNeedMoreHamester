@@ -2,7 +2,7 @@
 // 连接游戏引擎与酒馆 MVU 变量系统
 
 import type { GameState } from '../schema';
-import { GameStateSchema } from '../schema';
+import { Schema } from '../schema';
 import { createInitialGameState } from '../data/init';
 import { FACILITY_DEFS } from '../data/facilities';
 
@@ -20,12 +20,11 @@ export function loadGameState(messageId?: number): GameState {
   }
 
   // safeParse: 校验失败时回退到初始状态，避免阻塞加载
-  const result = GameStateSchema.safeParse(statData);
+  const result = Schema.safeParse(statData);
   if (result.success) {
     return result.data;
   }
   console.warn('[鼠鼠天堂] GameState 校验失败，使用原始数据:', result.error);
-  // 校验失败但数据存在时，信任原始数据（可能是 schema 变更导致）
   return statData as GameState;
 }
 
@@ -48,16 +47,15 @@ export function getStateForPrompt(state: GameState): string {
   lines.push(`【资源】⚡能源: ${state.energy}/${state.energyCap} | ✨星尘: ${state.stardust} | 💛心情: ${state.happiness} | 回合: ${state.turn}`);
 
   // 鼠鼠简表
-  if (state.hamsters.length > 0) {
-    lines.push(`【鼠居民】(${state.hamsters.length}只)`);
-    for (const h of state.hamsters) {
-      const location = h.assignedTo
-        ? state.facilities.find(f => f.id === h.assignedTo)?.type ?? '未知'
+  const hamsterEntries = Object.entries(state.hamsters);
+  if (hamsterEntries.length > 0) {
+    lines.push(`【鼠居民】(${hamsterEntries.length}只)`);
+    for (const [hId, h] of hamsterEntries) {
+      const facilityType = h.assignedTo ? state.facilities[h.assignedTo]?.type : null;
+      const facilityName = facilityType
+        ? (FACILITY_DEFS.find(d => d.type === facilityType)?.name ?? facilityType)
         : '休息中';
-      const facilityName = h.assignedTo
-        ? FACILITY_DEFS.find(d => d.type === state.facilities.find(f => f.id === h.assignedTo)?.type)?.name ?? location
-        : '休息中';
-      lines.push(`  ${h.name}(${h.breed}) 性格:${h.personality.join('/')} 心情:${h.mood} 体力:${h.stamina} 位置:${facilityName}`);
+      lines.push(`  ${h.name}[${hId}](${h.breed}) 性格:${h.personality} 心情:${h.mood} 体力:${h.stamina} 位置:${facilityName}`);
     }
   } else {
     lines.push('【鼠居民】无');
@@ -65,35 +63,37 @@ export function getStateForPrompt(state: GameState): string {
 
   // 天使简表
   lines.push('【鼠天使】');
-  for (const a of state.angels) {
-    const facilityName = a.assignedFacility
-      ? FACILITY_DEFS.find(d => d.type === state.facilities.find(f => f.id === a.assignedFacility)?.type)?.name ?? '未知设施'
+  for (const [aId, a] of Object.entries(state.angels)) {
+    const facilityType = a.assignedFacility ? state.facilities[a.assignedFacility]?.type : null;
+    const facilityName = facilityType
+      ? (FACILITY_DEFS.find(d => d.type === facilityType)?.name ?? facilityType)
       : '空闲';
-    const skillInfo = a.skills
-      .filter(s => a.level >= s.unlockedAtAngelLevel)
-      .map(s => `${s.skillId}${s.cooldownLeft > 0 ? `(CD:${s.cooldownLeft})` : ''}`)
+    const skillInfo = Object.entries(a.skills)
+      .filter(([, s]) => a.level >= s.unlockedAtAngelLevel)
+      .map(([sId, s]) => `${sId}${s.cooldownLeft > 0 ? `(CD:${s.cooldownLeft})` : ''}`)
       .join(', ');
-    lines.push(`  ${a.name} Lv.${a.level} 管理:${facilityName} 技能:[${skillInfo}]`);
+    lines.push(`  ${a.name}[${aId}] Lv.${a.level} 管理:${facilityName} 技能:[${skillInfo}]`);
   }
 
   // 设施简表
-  if (state.facilities.length > 0) {
-    lines.push(`【设施】(${state.facilities.length}个)`);
-    for (const f of state.facilities) {
+  const facilityEntries = Object.entries(state.facilities);
+  if (facilityEntries.length > 0) {
+    lines.push(`【设施】(${facilityEntries.length}个)`);
+    for (const [fId, f] of facilityEntries) {
       const def = FACILITY_DEFS.find(d => d.type === f.type);
       const name = def?.name ?? f.type;
-      const manager = f.managedBy
-        ? state.angels.find(a => a.id === f.managedBy)?.name ?? '未知'
-        : '无人管理';
-      lines.push(`  ${name} Lv.${f.level} 容量:${f.occupants.length}/${f.capacity} 管理:${manager}`);
+      const managerName = f.managedBy ? (state.angels[f.managedBy]?.name ?? '未知') : '无人管理';
+      const occupantCount = Object.keys(f.occupants).length;
+      lines.push(`  ${name}[${fId}] Lv.${f.level} 容量:${occupantCount}/${f.capacity} 管理:${managerName}`);
     }
   } else {
     lines.push('【设施】无');
   }
 
   // 成就
-  if (state.achievements.length > 0) {
-    lines.push(`【已解锁成就】${state.achievements.join(', ')}`);
+  const unlockedAchievements = Object.keys(state.achievements).filter(k => state.achievements[k]);
+  if (unlockedAchievements.length > 0) {
+    lines.push(`【已解锁成就】${unlockedAchievements.join(', ')}`);
   }
 
   return lines.join('\n');

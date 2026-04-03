@@ -1,23 +1,24 @@
 <% var turn = getvar('stat_data.turn', {defaults: 0}); %>
 <% var energy = getvar('stat_data.energy', {defaults: 50}); %>
 <% var stardust = getvar('stat_data.stardust', {defaults: 0}); %>
-<% var hamsters = getvar('stat_data.hamsters', {defaults: []}); %>
-<% var facilities = getvar('stat_data.facilities', {defaults: []}); %>
+<% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); %>
+<% var hamsterCount = Object.keys(hamsters).length; %>
+<% var facilities = getvar('stat_data.facilities', {defaults: {}}); %>
 【本回合事件生成指令】
 
-<% if (turn <= 3 && hamsters.length === 0) { %>
+<% if (turn <= 3 && hamsterCount === 0) { %>
 你正在引导新园长。本回合请生成：
 1. 一个"日常"事件：描述乐园初建的温馨氛围，天使们准备迎接第一只鼠鼠
-2. 一个"机遇"事件：乐园门口发现了一只被遗弃的鼠鼠，附带 <new_hamster> 数据供收养
+2. 一个"机遇"事件：乐园门口发现了一只被遗弃的鼠鼠，同时通过 JSONPatch 设置 adoption_proposal
 
 新鼠鼠的品种从以下选择：golden(金丝熊), dwarf(侏儒), milk_tea(奶茶), pudding(布丁), silver_fox(银狐), purple(紫仓), cream(奶油), sapphire(蓝宝石)
-性格标签从以下选择1-2个：贪吃, 胆小, 好奇, 社牛, 爱睡觉, 精力旺盛, 温顺, 调皮
+性格标签从以下选择1-2个（逗号分隔）：贪吃, 胆小, 好奇, 社牛, 爱睡觉, 精力旺盛, 温顺, 调皮
 basePower 范围 3-8，preference 从设施类型中选择或留空
 
 <% } else if (turn <= 10) { %>
 乐园处于新手期（回合<%= turn %>）。请生成2个事件：
 - 以"日常"和"机遇"为主，帮助玩家熟悉乐园
-- 如果鼠鼠数量少于3只，至少一个事件应是收养机会（附带 <new_hamster>）
+- 如果鼠鼠数量少于3只（当前<%= hamsterCount %>只），至少一个事件应是收养机会（设置 adoption_proposal）
 - 事件关联已有的鼠鼠或天使，让玩家感受到角色的鲜活
 
 <% } else if (turn <= 30) { %>
@@ -36,13 +37,15 @@ basePower 范围 3-8，preference 从设施类型中选择或留空
 <% } %>
 
 事件格式要求：
-- 每个事件2-3个选项，每个标注 energy/stardust/mood 变化量
-- 至少一个稳妥选项（小幅正收益），可选一个恶搞选项（扣除量极小，换来有趣叙事）
+- 通过 <UpdateVariable><JSONPatch> 写入 pending_events，每个事件2-3个选项
+- 每个选项标注 energy_delta/stardust_delta/mood_delta 变化量
+- 至少一个稳妥选项（小幅正收益），可选一个恶搞选项（is_silly: true，扣除量极小）
 <% if (energy > 0) { %>
-- 负面选项能源扣除不超过 <%= Math.round(energy * 0.1) %>
+- 负面选项能源扣除不超过 <%= Math.round(energy * 0.3) %>
 <% } %>
 <% if (stardust > 0) { %>
 - 负面选项星尘扣除不超过 <%= Math.round(stardust * 0.1) %>
 <% } %>
-- 关联角色请使用角色的 id（鼠鼠的id、天使的id如 mianhua/luosi/xingxing/paofu）
+- 关联角色使用角色ID（鼠鼠ID、天使ID如 mianhua/luosi/xingxing/paofu）
+- 涉及到的角色需通过 JSONPatch 写入对应的 memory 字段
 - 回复末尾输出 <StatusPlaceHolderImpl/>

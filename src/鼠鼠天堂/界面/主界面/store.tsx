@@ -2,7 +2,7 @@
 // React Context + useReducer，连接 MVU 读写和游戏引擎
 
 import React, { createContext, useContext, useReducer, useEffect, useRef, useCallback } from 'react';
-import type { GameState } from '../../schema';
+import type { GameState, Hamster } from '../../schema';
 import { loadGameState, saveGameState } from '../../bridge/state';
 import { createInitialGameState } from '../../data/init';
 
@@ -13,7 +13,6 @@ import { levelUpAngel, useSkill, tickCooldowns } from '../../engine/angel';
 import { applyEventChoice, rollEventSlots } from '../../engine/event';
 import { settleTurn } from '../../engine/turn';
 import { checkAchievements } from '../../engine/achievement';
-import type { Hamster } from '../../schema';
 
 // ── UI 状态 ──
 
@@ -40,12 +39,12 @@ export type Action =
   | { type: 'BUILD_FACILITY'; facilityType: string }
   | { type: 'UPGRADE_FACILITY'; facilityId: string }
   | { type: 'ASSIGN_ANGEL'; angelId: string; facilityId: string }
-  | { type: 'ADOPT_HAMSTER'; data: Omit<Hamster, 'assignedTo' | 'memory'> }
+  | { type: 'ADOPT_HAMSTER'; hamsterId: string; data: Omit<Hamster, 'assignedTo' | 'memory' | 'mood' | 'stamina'> }
   | { type: 'ASSIGN_HAMSTER'; hamsterId: string; facilityId: string }
   | { type: 'UNASSIGN_HAMSTER'; hamsterId: string }
   | { type: 'LEVEL_UP_ANGEL'; angelId: string }
   | { type: 'USE_SKILL'; angelId: string; skillId: string; targetId?: string }
-  | { type: 'CHOOSE_EVENT'; eventId: string; optionIndex: number }
+  | { type: 'CHOOSE_EVENT'; eventId: string; optionKey: string }
   | { type: 'ADVANCE_TURN' };
 
 // ── Reducer ──
@@ -89,7 +88,7 @@ function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'ADOPT_HAMSTER': {
-      const result = adoptHamster(state.game, action.data);
+      const result = adoptHamster(state.game, action.hamsterId, action.data);
       if (!result.success) return state;
       return {
         ...state,
@@ -112,7 +111,7 @@ function reducer(state: AppState, action: Action): AppState {
     case 'LEVEL_UP_ANGEL': {
       const newGame = levelUpAngel(state.game, action.angelId);
       if (newGame === state.game) return state;
-      const angel = newGame.angels.find(a => a.id === action.angelId);
+      const angel = newGame.angels[action.angelId];
       return {
         ...state,
         game: newGame,
@@ -131,9 +130,9 @@ function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'CHOOSE_EVENT': {
-      const event = state.game.pendingEvents.find(e => e.id === action.eventId);
-      const option = event?.options[action.optionIndex];
-      const newGame = applyEventChoice(state.game, action.eventId, action.optionIndex);
+      const event = state.game.pending_events[action.eventId];
+      const option = event?.options[action.optionKey];
+      const newGame = applyEventChoice(state.game, action.eventId, action.optionKey);
       if (newGame === state.game) return state;
       return {
         ...state,
@@ -146,17 +145,16 @@ function reducer(state: AppState, action: Action): AppState {
       let game = state.game;
       let log = [...state.log];
 
-      // 1. 回合结算
+      // 1. 回合结算（settleTurn 已含 turn+1）
       game = settleTurn(game);
       game = tickCooldowns(game);
-      game = { ...game, turn: game.turn + 1 };
       log.push({ turn: game.turn, text: `回合 ${game.turn} 开始`, type: 'turn' });
 
       // 2. 成就检测
       const achResult = checkAchievements(game);
       game = achResult.state;
       for (const ach of achResult.unlocked) {
-        log.push({ turn: game.turn, text: `🏆 解锁成就: ${ach.name} (+${ach.reward}✨)`, type: 'achievement' });
+        log.push({ turn: game.turn, text: `解锁成就: ${ach.name} (+${ach.reward}星尘)`, type: 'achievement' });
       }
 
       // 3. 生成下回合事件槽（实际事件由 AI 生成，这里只是占位）
@@ -199,7 +197,8 @@ export function useDispatch(): React.Dispatch<Action> {
 const initialAppState: AppState = {
   game: {
     energy: 0, energyCap: 0, stardust: 0, turn: 0, happiness: 0,
-    hamsters: [], facilities: [], angels: [], achievements: [], pendingEvents: [],
+    hamsters: {}, facilities: {}, angels: {}, achievements: {},
+    pending_events: {}, adoption_proposal: null,
   },
   tab: 'overview',
   log: [],

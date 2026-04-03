@@ -11,10 +11,11 @@ export function createInitialGameState(): GameState {
     stardust: 0,
     turn: 0,
     happiness: 70,
-    hamsters: [],
-    facilities: [],
+    hamsters: {},
+    facilities: {},
     angels: getStarterAngels(),
-    achievements: [],
-    pendingEvents: [],
+    achievements: {},
+    pending_events: {},
+    adoption_proposal: null,
   };
 }

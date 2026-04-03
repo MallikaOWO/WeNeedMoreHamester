@@ -33,62 +33,74 @@ export function rollEventSlots(_state: GameState): EventType[] {
 export function applyEventChoice(
   state: GameState,
   eventId: string,
-  optionIndex: number,
+  optionKey: string,
 ): GameState {
-  const event = state.pendingEvents.find(e => e.id === eventId);
+  const event = state.pending_events[eventId];
   if (!event) return state;
-  const option = event.options[optionIndex];
+  const option = event.options[optionKey];
   if (!option) return state;
 
-  let energy = state.energy + option.energyDelta;
-  let stardust = state.stardust + option.stardustDelta;
+  let energy = state.energy + option.energy_delta;
+  let stardust = state.stardust + option.stardust_delta;
   // 资源不低于0
   energy = Math.max(0, Math.min(energy, state.energyCap));
   stardust = Math.max(0, stardust);
 
   // 心情变化
   let hamsters = state.hamsters;
-  if (option.moodDelta !== 0) {
-    if (option.moodTarget) {
+  if (option.mood_delta !== 0) {
+    if (option.mood_target) {
       // 指定角色心情变化
-      hamsters = state.hamsters.map(h =>
-        h.id === option.moodTarget
-          ? { ...h, mood: Math.max(0, Math.min(100, h.mood + option.moodDelta)) }
-          : h
-      );
+      const target = hamsters[option.mood_target];
+      if (target) {
+        hamsters = {
+          ...hamsters,
+          [option.mood_target]: {
+            ...target,
+            mood: Math.max(0, Math.min(100, target.mood + option.mood_delta)),
+          },
+        };
+      }
     } else {
       // 全局心情变化
-      hamsters = state.hamsters.map(h => ({
-        ...h,
-        mood: Math.max(0, Math.min(100, h.mood + option.moodDelta)),
-      }));
+      hamsters = Object.fromEntries(
+        Object.entries(state.hamsters).map(([id, h]) => [
+          id,
+          { ...h, mood: Math.max(0, Math.min(100, h.mood + option.mood_delta)) },
+        ])
+      );
     }
   }
 
   // 从待处理事件中移除
-  const pendingEvents = state.pendingEvents.filter(e => e.id !== eventId);
+  const { [eventId]: _, ...pending_events } = state.pending_events;
 
   return {
     ...state,
     energy,
     stardust,
     hamsters,
-    pendingEvents,
+    pending_events,
   };
 }
 
 /** 验证事件选项的资源扣除不超过当前资源的10% */
-export function validateEventOptions(state: GameState, options: EventOption[]): EventOption[] {
+export function validateEventOptions(state: GameState, options: Record<string, EventOption>): Record<string, EventOption> {
   const maxEnergyLoss = Math.round(state.energy * 0.1);
   const maxStardustLoss = Math.round(state.stardust * 0.1);
 
-  return options.map(opt => ({
-    ...opt,
-    energyDelta: opt.energyDelta < 0
-      ? Math.max(opt.energyDelta, -maxEnergyLoss)
-      : opt.energyDelta,
-    stardustDelta: opt.stardustDelta < 0
-      ? Math.max(opt.stardustDelta, -maxStardustLoss)
-      : opt.stardustDelta,
-  }));
+  return Object.fromEntries(
+    Object.entries(options).map(([key, opt]) => [
+      key,
+      {
+        ...opt,
+        energy_delta: opt.energy_delta < 0
+          ? Math.max(opt.energy_delta, -maxEnergyLoss)
+          : opt.energy_delta,
+        stardust_delta: opt.stardust_delta < 0
+          ? Math.max(opt.stardust_delta, -maxStardustLoss)
+          : opt.stardust_delta,
+      },
+    ])
+  );
 }

@@ -28,7 +28,9 @@ const Hamsters: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<string | null>(null);
 
-  if (game.hamsters.length === 0) {
+  const hamsterEntries = Object.entries(game.hamsters);
+
+  if (hamsterEntries.length === 0) {
     return (
       <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 32 }}>
         乐园里还没有鼠鼠
@@ -38,23 +40,24 @@ const Hamsters: React.FC = () => {
   }
 
   // 可分配的设施（有容量且未满）
-  const availableFacilities = game.facilities.filter(f => f.capacity > 0 && f.occupants.length < f.capacity);
+  const availableFacilities = Object.entries(game.facilities)
+    .filter(([, f]) => f.capacity > 0 && Object.keys(f.occupants).length < f.capacity);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {game.hamsters.map(h => {
-        const expanded = expandedId === h.id;
-        const assigning = assigningId === h.id;
+      {hamsterEntries.map(([hId, h]) => {
+        const expanded = expandedId === hId;
+        const assigning = assigningId === hId;
         const location = h.assignedTo
-          ? getFacilityDef(game.facilities.find(f => f.id === h.assignedTo)?.type ?? '')?.name ?? '工作中'
+          ? getFacilityDef(game.facilities[h.assignedTo]?.type ?? '')?.name ?? '工作中'
           : '休息中';
 
         return (
-          <div key={h.id} className="card">
+          <div key={hId} className="card">
             {/* 头部 */}
             <div
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-              onClick={() => setExpandedId(expanded ? null : h.id)}
+              onClick={() => setExpandedId(expanded ? null : hId)}
             >
               <div>
                 <span style={{ fontWeight: 600 }}>{h.name}</span>
@@ -68,7 +71,7 @@ const Hamsters: React.FC = () => {
 
             {/* 状态行 */}
             <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-              性格: {h.personality.join('、')} | 位置: {location}
+              性格: {h.personality} | 位置: {location}
             </div>
 
             {/* 展开详情 */}
@@ -83,14 +86,14 @@ const Hamsters: React.FC = () => {
                   {h.assignedTo ? (
                     <button
                       className="btn btn-sm"
-                      onClick={() => dispatch({ type: 'UNASSIGN_HAMSTER', hamsterId: h.id })}
+                      onClick={() => dispatch({ type: 'UNASSIGN_HAMSTER', hamsterId: hId })}
                     >
                       回窝休息
                     </button>
                   ) : (
                     <button
                       className="btn btn-sm"
-                      onClick={() => setAssigningId(assigning ? null : h.id)}
+                      onClick={() => setAssigningId(assigning ? null : hId)}
                       disabled={availableFacilities.length === 0}
                     >
                       {assigning ? '取消' : '分配到设施'}
@@ -101,19 +104,19 @@ const Hamsters: React.FC = () => {
                 {/* 设施选择 */}
                 {assigning && (
                   <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {availableFacilities.map(f => {
+                    {availableFacilities.map(([fId, f]) => {
                       const def = getFacilityDef(f.type);
                       return (
                         <button
-                          key={f.id}
+                          key={fId}
                           className="btn btn-sm"
                           style={{ textAlign: 'left' }}
                           onClick={() => {
-                            dispatch({ type: 'ASSIGN_HAMSTER', hamsterId: h.id, facilityId: f.id });
+                            dispatch({ type: 'ASSIGN_HAMSTER', hamsterId: hId, facilityId: fId });
                             setAssigningId(null);
                           }}
                         >
-                          {def?.name ?? f.type} ({f.occupants.length}/{f.capacity})
+                          {def?.name ?? f.type} ({Object.keys(f.occupants).length}/{f.capacity})
                         </button>
                       );
                     })}
@@ -121,12 +124,12 @@ const Hamsters: React.FC = () => {
                 )}
 
                 {/* 记忆 */}
-                {h.memory.length > 0 && (
+                {Object.keys(h.memory).length > 0 && (
                   <div style={{ marginTop: 8 }}>
-                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 2 }}>记忆 ({h.memory.length})</div>
-                    {h.memory.slice(-3).map((m, i) => (
-                      <div key={i} style={{ fontSize: 11, color: '#374151', lineHeight: 1.4 }}>
-                        {m.important && '⭐ '}[回合{m.turn}] {m.text}
+                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 2 }}>记忆 ({Object.keys(h.memory).length})</div>
+                    {Object.entries(h.memory).slice(-3).map(([key, text]) => (
+                      <div key={key} style={{ fontSize: 11, color: '#374151', lineHeight: 1.4 }}>
+                        {key.startsWith('!') && '⭐ '}[{key}] {text}
                       </div>
                     ))}
                   </div>

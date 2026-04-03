@@ -17,15 +17,16 @@ const TYPE_ICONS: Record<LogEntry['type'], string> = {
 const Log: React.FC = () => {
   const { state } = useStore();
   const game = state.game;
+  const unlockedCount = Object.values(game.achievements).filter(Boolean).length;
 
   return (
     <div>
       {/* 成就进度 */}
       <div className="card" style={{ marginBottom: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>成就进度 ({game.achievements.length}/{ACHIEVEMENTS.length})</div>
+        <div style={{ fontWeight: 600, marginBottom: 8 }}>成就进度 ({unlockedCount}/{ACHIEVEMENTS.length})</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {ACHIEVEMENTS.map(ach => {
-            const unlocked = game.achievements.includes(ach.id);
+            const unlocked = !!game.achievements[ach.id];
             return (
               <div
                 key={ach.id}

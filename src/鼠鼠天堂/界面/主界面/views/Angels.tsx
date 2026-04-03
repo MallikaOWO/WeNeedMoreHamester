@@ -23,20 +23,21 @@ const Angels: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {game.angels.map(angel => {
-        const expanded = expandedId === angel.id;
-        const preset = ANGEL_PRESETS.find(p => p.id === angel.id);
-        const facilityName = angel.assignedFacility
-          ? getFacilityDef(game.facilities.find(f => f.id === angel.assignedFacility)?.type ?? '')?.name ?? '未知'
+      {Object.entries(game.angels).map(([angelId, angel]) => {
+        const expanded = expandedId === angelId;
+        const preset = ANGEL_PRESETS.find(p => p.id === angelId);
+        const facilityType = angel.assignedFacility ? game.facilities[angel.assignedFacility]?.type : null;
+        const facilityName = facilityType
+          ? (getFacilityDef(facilityType)?.name ?? '未知')
           : '空闲';
-        const levelCheck = canLevelUp(game, angel.id);
+        const levelCheck = canLevelUp(game, angelId);
 
         return (
-          <div key={angel.id} className="card">
+          <div key={angelId} className="card">
             {/* 头部 */}
             <div
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-              onClick={() => setExpandedId(expanded ? null : angel.id)}
+              onClick={() => setExpandedId(expanded ? null : angelId)}
             >
               <div>
                 <span style={{ fontWeight: 600 }}>{angel.name}</span>
@@ -56,17 +57,17 @@ const Angels: React.FC = () => {
 
             {/* 技能列表（总是显示） */}
             <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-              {angel.skills.map(sk => {
-                const def = getSkillDef(sk.skillId);
+              {Object.entries(angel.skills).map(([skId, sk]) => {
+                const def = getSkillDef(skId);
                 const locked = angel.level < sk.unlockedAtAngelLevel;
                 const onCooldown = sk.cooldownLeft > 0;
                 const canUse = !locked && !onCooldown;
                 const needsTarget = def?.effectType === 'heal_mood';
-                const isSelectingTarget = skillTarget?.angelId === angel.id && skillTarget?.skillId === sk.skillId;
+                const isSelectingTarget = skillTarget?.angelId === angelId && skillTarget?.skillId === skId;
 
                 return (
                   <button
-                    key={sk.skillId}
+                    key={skId}
                     className="btn btn-sm"
                     disabled={!canUse}
                     style={{
@@ -75,14 +76,14 @@ const Angels: React.FC = () => {
                     }}
                     title={locked ? `Lv.${sk.unlockedAtAngelLevel} 解锁` : onCooldown ? `冷却中 (${sk.cooldownLeft}回合)` : def?.description}
                     onClick={() => {
-                      if (needsTarget && game.hamsters.length > 0) {
-                        setSkillTarget(isSelectingTarget ? null : { angelId: angel.id, skillId: sk.skillId });
+                      if (needsTarget && Object.keys(game.hamsters).length > 0) {
+                        setSkillTarget(isSelectingTarget ? null : { angelId, skillId: skId });
                       } else {
-                        dispatch({ type: 'USE_SKILL', angelId: angel.id, skillId: sk.skillId });
+                        dispatch({ type: 'USE_SKILL', angelId, skillId: skId });
                       }
                     }}
                   >
-                    {def?.name ?? sk.skillId}
+                    {def?.name ?? skId}
                     {onCooldown && <span style={{ fontSize: 10, marginLeft: 2 }}>({sk.cooldownLeft})</span>}
                     {locked && <span style={{ fontSize: 10, marginLeft: 2 }}>🔒</span>}
                   </button>
@@ -91,15 +92,15 @@ const Angels: React.FC = () => {
             </div>
 
             {/* 技能目标选择 */}
-            {skillTarget?.angelId === angel.id && (
+            {skillTarget?.angelId === angelId && (
               <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 <span style={{ fontSize: 12, color: '#6b7280', lineHeight: '24px' }}>选择目标:</span>
-                {game.hamsters.map(h => (
+                {Object.entries(game.hamsters).map(([hId, h]) => (
                   <button
-                    key={h.id}
+                    key={hId}
                     className="btn btn-sm"
                     onClick={() => {
-                      dispatch({ type: 'USE_SKILL', angelId: angel.id, skillId: skillTarget.skillId, targetId: h.id });
+                      dispatch({ type: 'USE_SKILL', angelId, skillId: skillTarget.skillId, targetId: hId });
                       setSkillTarget(null);
                     }}
                   >
@@ -117,7 +118,7 @@ const Angels: React.FC = () => {
                   <button
                     className="btn btn-sm btn-primary"
                     disabled={!levelCheck.ok}
-                    onClick={() => dispatch({ type: 'LEVEL_UP_ANGEL', angelId: angel.id })}
+                    onClick={() => dispatch({ type: 'LEVEL_UP_ANGEL', angelId })}
                     title={levelCheck.reason}
                   >
                     {angel.level >= 5 ? '已满级' : `升级到 Lv.${angel.level + 1}`}
@@ -129,11 +130,11 @@ const Angels: React.FC = () => {
 
                 {/* 技能详情 */}
                 <div style={{ fontSize: 12 }}>
-                  {angel.skills.map(sk => {
-                    const def = getSkillDef(sk.skillId);
+                  {Object.entries(angel.skills).map(([skId, sk]) => {
+                    const def = getSkillDef(skId);
                     return (
-                      <div key={sk.skillId} style={{ marginBottom: 4 }}>
-                        <span style={{ fontWeight: 500 }}>{def?.name ?? sk.skillId}</span>
+                      <div key={skId} style={{ marginBottom: 4 }}>
+                        <span style={{ fontWeight: 500 }}>{def?.name ?? skId}</span>
                         <span style={{ color: '#6b7280' }}> — {def?.description ?? ''}</span>
                         <span style={{ color: '#9ca3af' }}> (CD:{def?.cooldown ?? '?'}回合, Lv.{sk.unlockedAtAngelLevel}解锁)</span>
                       </div>
@@ -142,12 +143,12 @@ const Angels: React.FC = () => {
                 </div>
 
                 {/* 记忆 */}
-                {angel.memory.length > 0 && (
+                {Object.keys(angel.memory).length > 0 && (
                   <div style={{ marginTop: 6 }}>
-                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 2 }}>记忆 ({angel.memory.length})</div>
-                    {angel.memory.slice(-3).map((m, i) => (
-                      <div key={i} style={{ fontSize: 11, color: '#374151', lineHeight: 1.4 }}>
-                        {m.important && '⭐ '}[回合{m.turn}] {m.text}
+                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 2 }}>记忆 ({Object.keys(angel.memory).length})</div>
+                    {Object.entries(angel.memory).slice(-3).map(([key, text]) => (
+                      <div key={key} style={{ fontSize: 11, color: '#374151', lineHeight: 1.4 }}>
+                        {key.startsWith('!') && '⭐ '}[{key}] {text}
                       </div>
                     ))}
                   </div>

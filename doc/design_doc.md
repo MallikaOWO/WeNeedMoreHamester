@@ -5,14 +5,14 @@
 
 ### 核心提示词
 - [x] 身份、任务定义（预设：身份 + Auxiliary Prompt）
-- [ ] mvu三件套（变量更新规则 + 变量输出格式 + initvar）— 需按标准 MVU JSONPatch 格式重写
+- [x] mvu三件套（变量更新规则 + 变量输出格式 + initvar）
 - [x] 鼠天使人设（世界书：4位天使独立人设）
 - [x] 动态回合提示词（世界书 EJS：状态摘要 + 事件指令）
-- [ ] AI 输出约束：JSONPatch 更新 pending_events / memory / adoption_proposal
+- [x] AI 输出约束：JSONPatch 更新 pending_events / memory / adoption_proposal
 
 ### 前端部分
 - [x] 游戏基本逻辑（engine/ 7个模块）
-- [ ] 数据结构 — schema.ts 需按 MVU 约定重写（record/coerce/transform/prefault）
+- [x] 数据结构 — schema.ts（record/coerce/transform/prefault）
 - [x] 前端界面（6标签页，美化交给gemini）
 - [x] 脚本部分（MVU加载 + 变量结构注册）
 

@@ -13,21 +13,21 @@ export interface AchievementUnlock {
 export function checkAchievements(state: GameState): { state: GameState; unlocked: AchievementUnlock[] } {
   const unlocked: AchievementUnlock[] = [];
   let stardust = state.stardust;
-  const newAchievements = [...state.achievements];
+  const achievements = { ...state.achievements };
 
   for (const def of ACHIEVEMENTS) {
-    if (state.achievements.includes(def.id)) continue;
+    if (achievements[def.id]) continue;
     if (def.check(state)) {
       unlocked.push({ id: def.id, name: def.name, reward: def.reward });
       stardust += def.reward;
-      newAchievements.push(def.id);
+      achievements[def.id] = true;
     }
   }
 
   if (unlocked.length === 0) return { state, unlocked: [] };
 
   return {
-    state: { ...state, stardust, achievements: newAchievements },
+    state: { ...state, stardust, achievements },
     unlocked,
   };
 }

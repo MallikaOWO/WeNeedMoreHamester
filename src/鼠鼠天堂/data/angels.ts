@@ -5,7 +5,7 @@ import { getSkillsByAngel } from './skills';
 export interface AngelPreset {
   id: string;
   name: string;
-  manageDomain: Angel['manageDomain'];
+  manageDomain: string;
   /** 性格关键词（供提示词使用） */
   personalityKeywords: string[];
   /** 简要描述 */
@@ -53,26 +53,32 @@ export const ANGEL_PRESETS: AngelPreset[] = [
 /** 将预设天使转为初始游戏状态中的 Angel 对象 */
 export function createInitialAngel(preset: AngelPreset): Angel {
   const skills = getSkillsByAngel(preset.id);
-  return {
-    id: preset.id,
-    name: preset.name,
-    level: 1,
-    manageDomain: preset.manageDomain,
-    assignedFacility: null,
-    skills: skills.map(s => ({
-      skillId: s.id,
+  const skillRecord: Record<string, { level: number; cooldownLeft: number; unlockedAtAngelLevel: number }> = {};
+  for (const s of skills) {
+    skillRecord[s.id] = {
       level: 1,
       cooldownLeft: 0,
       unlockedAtAngelLevel: s.unlockedAtLevel,
-    })),
-    memory: [],
+    };
+  }
+  return {
+    name: preset.name,
+    level: 1,
     exp: 0,
+    manageDomain: preset.manageDomain,
+    assignedFacility: null,
+    skills: skillRecord,
+    memory: {},
   };
 }
 
-/** 获取初始可用天使（排除隐藏天使） */
-export function getStarterAngels(): Angel[] {
-  return ANGEL_PRESETS
-    .filter(p => p.id !== 'unknown')
-    .map(createInitialAngel);
+/** 获取初始可用天使（排除隐藏天使），返回 Record<angelId, Angel> */
+export function getStarterAngels(): Record<string, Angel> {
+  const result: Record<string, Angel> = {};
+  for (const p of ANGEL_PRESETS) {
+    if (p.id !== 'unknown') {
+      result[p.id] = createInitialAngel(p);
+    }
+  }
+  return result;
 }

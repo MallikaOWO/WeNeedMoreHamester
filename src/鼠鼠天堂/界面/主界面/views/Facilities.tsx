@@ -10,26 +10,29 @@ const Facilities: React.FC = () => {
   const game = state.game;
   const [showBuild, setShowBuild] = useState(false);
 
+  const facilityEntries = Object.entries(game.facilities);
+
   return (
     <div>
       {/* 已建设施 */}
-      {game.facilities.length === 0 ? (
+      {facilityEntries.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 24, marginBottom: 12 }}>
           还没有建造任何设施
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-          {game.facilities.map(f => {
+          {facilityEntries.map(([fId, f]) => {
             const def = getFacilityDef(f.type);
             const name = def?.name ?? f.type;
             const manager = f.managedBy
-              ? game.angels.find(a => a.id === f.managedBy)?.name ?? '未知'
+              ? game.angels[f.managedBy]?.name ?? '未知'
               : '无';
-            const upgradeCheck = canUpgrade(game, f.id);
+            const upgradeCheck = canUpgrade(game, fId);
             const cost = def ? getUpgradeCost(def, f.level) : null;
+            const occupantCount = Object.keys(f.occupants).length;
 
             return (
-              <div key={f.id} className="card">
+              <div key={fId} className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <span style={{ fontWeight: 600 }}>{name}</span>
@@ -41,15 +44,15 @@ const Facilities: React.FC = () => {
                 </div>
 
                 <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                  {f.capacity > 0 && <span>容量: {f.occupants.length}/{f.capacity} | </span>}
+                  {f.capacity > 0 && <span>容量: {occupantCount}/{f.capacity} | </span>}
                   管理: {manager}
                   {def?.specialEffect && <span> | {def.specialEffect}</span>}
                 </div>
 
                 {/* 居民列表 */}
-                {f.occupants.length > 0 && (
+                {occupantCount > 0 && (
                   <div style={{ fontSize: 12, marginTop: 4 }}>
-                    居民: {f.occupants.map(id => game.hamsters.find(h => h.id === id)?.name ?? id).join('、')}
+                    居民: {Object.keys(f.occupants).map(id => game.hamsters[id]?.name ?? id).join('、')}
                   </div>
                 )}
 
@@ -59,7 +62,7 @@ const Facilities: React.FC = () => {
                     <button
                       className="btn btn-sm"
                       disabled={!upgradeCheck.ok}
-                      onClick={() => dispatch({ type: 'UPGRADE_FACILITY', facilityId: f.id })}
+                      onClick={() => dispatch({ type: 'UPGRADE_FACILITY', facilityId: fId })}
                       title={upgradeCheck.reason}
                     >
                       升级 {cost && `(⚡${cost.energy}${cost.stardust > 0 ? ` ✨${cost.stardust}` : ''})`}

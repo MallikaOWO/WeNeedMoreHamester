@@ -25,7 +25,7 @@ export function buildTurnPrompt(
   parts.push(`请生成 ${eventSlots.length} 个事件，类型分别为：${eventSlots.join('、')}`);
   parts.push('每个事件需要：');
   parts.push('1. 叙事描述（结合乐园当前状态和角色性格）');
-  parts.push('2. 2-3个选项，每个标注 energy/stardust/mood 变化量');
+  parts.push('2. 2-3个选项，每个标注 energy_delta/stardust_delta/mood_delta 变化量');
   parts.push('3. 至少一个稳妥选项，可选一个恶搞选项（扣除量不超过当前资源的10%）');
 
   if (state.energy > 0) {
@@ -73,22 +73,24 @@ export function buildInteractionPrompt(
   parts.push(`【当前资源】⚡${state.energy}/${state.energyCap} ✨${state.stardust} 💛${state.happiness} 回合${state.turn}`);
 
   // 查找角色
-  const hamster = state.hamsters.find(h => h.id === characterId);
-  const angel = state.angels.find(a => a.id === characterId);
+  const hamster = state.hamsters[characterId];
+  const angel = state.angels[characterId];
 
   if (hamster) {
     parts.push('');
     parts.push(`【互动对象：鼠居民 ${hamster.name}】`);
-    parts.push(`品种：${hamster.breed} | 性格：${hamster.personality.join('、')}`);
+    parts.push(`品种：${hamster.breed} | 性格：${hamster.personality}`);
     parts.push(`心情：${hamster.mood} | 体力：${hamster.stamina}`);
     parts.push(`背景：${hamster.story}`);
   } else if (angel) {
     parts.push('');
     parts.push(`【互动对象：鼠天使 ${angel.name}】`);
     parts.push(`等级：Lv.${angel.level} | 管理方向：${angel.manageDomain}`);
-    const activeSkills = angel.skills.filter(s => angel.level >= s.unlockedAtAngelLevel);
+    const activeSkills = Object.entries(angel.skills)
+      .filter(([, s]) => angel.level >= s.unlockedAtAngelLevel)
+      .map(([sId]) => sId);
     if (activeSkills.length > 0) {
-      parts.push(`技能：${activeSkills.map(s => s.skillId).join('、')}`);
+      parts.push(`技能：${activeSkills.join('、')}`);
     }
   }
 
