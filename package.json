@@ -4,7 +4,7 @@
     "build": "webpack --mode production",
     "release": "webpack --mode production --env",
     "watch": "webpack --mode development --watch --progress",
-    "dump": "node dump_schema.ts",
+    "dump": "npx tsx dump_schema.ts",
     "sync": "node tavern_sync.mjs"
   },
   "browserslist": [
