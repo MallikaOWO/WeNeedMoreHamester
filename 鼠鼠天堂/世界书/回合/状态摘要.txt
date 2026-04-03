@@ -1,0 +1,33 @@
+【当前乐园状态】
+⚡能源: <%= getvar('stat_data.energy', {defaults: 0}) %>/<%= getvar('stat_data.energyCap', {defaults: 100}) %> | ✨星尘: <%= getvar('stat_data.stardust', {defaults: 0}) %> | 💛心情: <%= getvar('stat_data.happiness', {defaults: 70}) %>/100 | 回合: <%= getvar('stat_data.turn', {defaults: 0}) %>
+
+<% var hamsters = getvar('stat_data.hamsters', {defaults: []}); %>
+<% if (hamsters.length > 0) { %>
+【鼠居民】(<%= hamsters.length %>只)
+<% hamsters.forEach(function(h) { %>
+  <%= h.name %>(<%= h.breed %>) 性格:<%= h.personality.join('/') %> 心情:<%= h.mood %> 体力:<%= h.stamina %> 位置:<%= h.assignedTo ? '工作中' : '休息中' %>
+<% }); %>
+<% } else { %>
+【鼠居民】无（乐园刚刚建立，还没有鼠鼠入住）
+<% } %>
+
+<% var angels = getvar('stat_data.angels', {defaults: []}); %>
+【鼠天使】
+<% angels.forEach(function(a) { %>
+  <%= a.name %> Lv.<%= a.level %> 管理:<%= a.assignedFacility ? '值班中' : '空闲' %> 技能:[<%= a.skills.filter(function(s){ return a.level >= s.unlockedAtAngelLevel; }).map(function(s){ return s.skillId + (s.cooldownLeft > 0 ? '(CD:' + s.cooldownLeft + ')' : ''); }).join(', ') %>]
+<% }); %>
+
+<% var facilities = getvar('stat_data.facilities', {defaults: []}); %>
+<% if (facilities.length > 0) { %>
+【设施】(<%= facilities.length %>个)
+<% facilities.forEach(function(f) { %>
+  <%= f.type %> Lv.<%= f.level %> 容量:<%= f.occupants.length %>/<%= f.capacity %> 管理:<%= f.managedBy || '无' %>
+<% }); %>
+<% } else { %>
+【设施】无（还没有建造任何设施）
+<% } %>
+
+<% var achievements = getvar('stat_data.achievements', {defaults: []}); %>
+<% if (achievements.length > 0) { %>
+【已解锁成就】<%= achievements.join(', ') %>
+<% } %>

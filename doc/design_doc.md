@@ -4,19 +4,21 @@
 参考：steam轻量版基建经营游戏，温馨治愈
 
 ### 核心提示词
-- [ ] 身份、任务定义等
-- [ ] mvu三件套
-- [ ] 相比于普通游戏，AI的特殊部分（随机事件，随机松鼠，随机性格表现等
+- [x] 身份、任务定义（预设：身份 + Auxiliary Prompt）
+- [ ] mvu三件套（变量更新规则 + 变量输出格式 + initvar）— 需按标准 MVU JSONPatch 格式重写
+- [x] 鼠天使人设（世界书：4位天使独立人设）
+- [x] 动态回合提示词（世界书 EJS：状态摘要 + 事件指令）
+- [ ] AI 输出约束：JSONPatch 更新 pending_events / memory / adoption_proposal
 
 ### 前端部分
-- [ ] 游戏基本逻辑
-- [ ] 数据结构
-- [ ] 前端界面（美化交给gemini）
-- [ ] 脚本部分
+- [x] 游戏基本逻辑（engine/ 7个模块）
+- [ ] 数据结构 — schema.ts 需按 MVU 约定重写（record/coerce/transform/prefault）
+- [x] 前端界面（6标签页，美化交给gemini）
+- [x] 脚本部分（MVU加载 + 变量结构注册）
 
 ### 记忆逻辑
-- [ ] 摘要提示词
-- [ ] 暂定存放世界书
+- [x] 摘要提示词（预设中）
+- [x] 记忆存放在角色 memory 字段（Record），AI 通过 JSONPatch 写入
 
 ---
 
@@ -34,10 +36,94 @@
 
 ### 回合制结构
 
-每次玩家发送消息视为"推进一个回合"。一个回合内：
-1. **玩家行动**：通过前端按钮或文字指令执行操作（建造、收养、分配等）
-2. **结算**：代码自动计算能源产出、消耗、状态变化
-3. **AI叙事**：AI 描述本回合发生的事情，包括鼠鼠的日常、随机事件、鼠天使的反馈
+每次玩家点击"推进回合"视为进入下一个回合。一个回合内：
+1. **玩家行动阶段**：通过前端按钮执行操作（处理上回合事件选项、建造、收养、分配、使用技能等），每个操作立即由代码修改变量
+2. **推进回合**：玩家点击推进 → 代码执行机械结算（产能、体力、冷却等）→ 代码整合当前状态为提示词 → 发送给 AI
+3. **AI 生成阶段**：AI 返回叙事文本 + `<UpdateVariable><JSONPatch>` 更新事件/记忆等字段 → MVU 自动解析写入变量
+4. **前端刷新**：界面读取更新后的变量，显示新事件卡片供玩家下回合操作
+
+### 回合数据流
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    玩家行动阶段                           │
+│  处理事件选项 / 建造设施 / 分配鼠鼠 / 使用技能 / 收养     │
+│  → 代码直接修改 stat_data（资源、设施、分配等）            │
+└──────────────────────┬──────────────────────────────────┘
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│                    推进回合                               │
+│  代码执行机械结算：                                       │
+│  ① 回合+1  ② 设施产能→能源  ③ 鼠鼠体力消耗/恢复         │
+│  ④ 心情变化  ⑤ 技能冷却-1  ⑥ 成就检测                    │
+│  → 代码直接修改 stat_data                                 │
+└──────────────────────┬──────────────────────────────────┘
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│              整合提示词 → 发送给 AI                        │
+│  EJS 模板从 stat_data 读取数据，动态生成提示词：           │
+│  • 资源/回合等状态摘要（只读上下文）                       │
+│  • 鼠鼠/天使/设施简表（只读上下文）                        │
+│  • 涉及角色的记忆（按需注入，只读上下文）                  │
+│  • 事件生成指令（告诉 AI 要生成什么、更新什么）             │
+└──────────────────────┬──────────────────────────────────┘
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│              AI 返回叙事 + UpdateVariable                 │
+│  消息文本：叙事描述（玩家看到的故事）                      │
+│  JSONPatch：更新 AI 负责的变量字段                         │
+│  → MVU 自动解析 JSONPatch，写入 stat_data                 │
+│  → VARIABLE_UPDATE_ENDED 钩子可做后处理                   │
+└──────────────────────┬──────────────────────────────────┘
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│              前端刷新 → 进入下一个玩家行动阶段             │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 变量分工：发给 AI vs AI 更新 vs 代码管理
+
+核心原则：**代码管理确定性的机械结算，AI 管理需要创造力的叙事内容**。
+
+#### ① 发给 AI 的上下文（AI 只读，不更新这些字段）
+
+这些数据通过 EJS 模板从 stat_data 中提取，注入到提示词中，让 AI 理解当前游戏进度：
+
+| 数据 | 用途 | 注入方式 |
+|------|------|----------|
+| turn, energy, energyCap, stardust, happiness | AI 了解资源状况，生成合理的事件选项数值 | 状态摘要模板，每回合必定注入 |
+| 鼠鼠简表（名字、品种、性格、心情、体力、位置） | AI 生成涉及具体鼠鼠的事件 | 状态摘要模板，每回合必定注入 |
+| 天使简表（名字、等级、技能冷却、管理设施） | AI 以天使视角 RP | 状态摘要模板，每回合必定注入 |
+| 设施简表（类型、等级、容量、使用者） | AI 了解乐园建设情况 | 状态摘要模板，每回合必定注入 |
+| 已解锁成就 | AI 避免重复里程碑叙事 | 状态摘要模板，每回合必定注入 |
+| 涉及角色的记忆 | AI 保持叙事连续性 | 按需注入（该角色出现在事件中时） |
+
+#### ② AI 更新的字段（AI 通过 JSONPatch 写入）
+
+这些是需要 AI 创造力的内容，AI 在每次回复末尾通过 `<UpdateVariable><JSONPatch>` 更新：
+
+| 字段路径 | 内容 | 说明 |
+|----------|------|------|
+| `pending_events.{事件ID}` | 事件描述 + 2-3 个选项（含资源 delta 标注） | AI 生成新事件，代码读取后渲染为事件卡片；玩家选择选项后由代码结算资源 |
+| `hamsters.{鼠鼠ID}.memory.{记忆ID}` | 该鼠鼠本回合的互动摘要 | 仅涉及到的鼠鼠才写入 |
+| `angels.{天使ID}.memory.{记忆ID}` | 该天使本回合的互动摘要 | 仅涉及到的天使才写入 |
+| `adoption_proposal` | 收养事件时：新鼠鼠的属性数据 | 代码读取后供玩家确认收养，收养时由代码创建正式鼠鼠条目 |
+
+#### ③ 代码管理的字段（AI 不碰）
+
+这些由前端操作或回合结算逻辑直接修改，AI 不应输出这些路径的 JSONPatch：
+
+| 字段 | 修改时机 |
+|------|----------|
+| energy, energyCap, stardust | 玩家选择事件选项后结算、建造/升级扣费、回合产能结算 |
+| happiness | 回合结算（所有鼠鼠平均心情） |
+| turn | 推进回合时 +1 |
+| hamsters.{id} 的机械属性（mood, stamina, assignedTo） | 回合结算（体力消耗/恢复、心情变化）、玩家分配操作 |
+| angels.{id} 的机械属性（level, exp, skills.cooldown, assignedFacility） | 回合结算（冷却-1）、升级操作、技能使用 |
+| facilities.{id} | 建造、升级、分配管理天使 |
+| achievements | 回合结算后的成就检测 |
+
+> **为什么 AI 不直接改资源？** 资源结算需要精确计算（产能公式、偏好加成、心情乘数等），AI 只需在事件选项中标注预期 delta 值，实际结算由代码完成。这保证了数值系统的确定性，同时让 AI 专注于叙事创造。
 
 ---
 
@@ -249,11 +335,13 @@
 ### AI 生成事件的约束（提示词侧）
 
 提示词需要告诉 AI：
-- 当前资源状况（避免扣到负数的选项）
+- 当前资源状况（避免标注超出当前资源的扣除值）
 - 可关联的角色列表和简要状态
-- 本回合需要生成几个事件（代码决定）
-- 每个选项必须标注 `⚡±X / ✨±X / 💛±X` 格式的资源影响
+- 本回合需要生成几个事件及类型（由 EJS 模板根据回合阶段动态决定）
+- 每个选项的 `energy_delta / stardust_delta / mood_delta` 需标注合理数值
 - 恶搞选项的扣除量不超过当前资源的10%
+- 事件数据通过 JSONPatch 写入 `pending_events`，格式需与 schema 匹配
+- 涉及角色需写入对应的 `memory` 字段
 
 ---
 
@@ -286,24 +374,26 @@
 
 ### 记忆结构
 
-每个角色（鼠居民 + 鼠天使）有一个 `memory` 字段，是一个字符串数组，存储该角色相关的互动摘要：
+每个角色（鼠居民 + 鼠天使）有一个 `memory` 字段，是一个 `Record<string, string>`（键值对），key 为记忆ID，value 为摘要文本：
 
 ```
-角色记忆 = [
-  "[回合3] 收养了布丁，她因为主人搬家被遗弃，性格胆小",
-  "[回合7] 布丁从跑轮上飞出去了，玩家选择让她体验飞翔，布丁获得'飞天'标签",
-  "[回合15] 玩家专门去安慰了受惊的布丁，心情恢复到90",
-  "[回合22] 布丁和奶茶成为了好朋友"
-]
+角色记忆 = {
+  "t3_adopted": "收养了布丁，她因为主人搬家被遗弃，性格胆小",
+  "t7_flew": "从跑轮上飞出去了，玩家选择让她体验飞翔",
+  "t15_comforted": "玩家专门去安慰了受惊的布丁，心情恢复到90",
+  "t22_friend": "和奶茶成为了好朋友"
+}
 ```
+
+使用 Record 而非数组的原因：JSONPatch 可通过 `insert /hamsters/puding/memory/t7_flew` 精准写入，天然幂等（重复写入同一 key 不会重复追加）。
 
 ### 记忆的写入时机
 
-以下情况会向角色记忆追加条目：
-1. **收养时**：记录收养背景
+AI 通过 JSONPatch 向角色 memory 写入条目，以下情况应写入：
+1. **收养时**：记录收养背景（AI 在生成收养事件时同时写入）
 2. **该角色相关的事件发生时**：无论是主动触发还是随机事件涉及
 3. **玩家主动与该角色互动时**：玩家选择"和布丁玩"或"找星星聊天"
-4. **重大状态变化**：心情跌破/恢复阈值、获得新标签等
+4. **重大状态变化**：心情跌破/恢复阈值等重要时刻
 
 ### 记忆的读取时机
 
@@ -316,10 +406,10 @@
 
 ### 记忆管理
 
-- 每个角色记忆上限：约10-15条（防止变量过大）
-- 超出时，由代码自动压缩旧记忆（合并相邻的低重要性条目）
-- 标记为"重要"的条目（收养、里程碑）不会被压缩
-- 鼠天使的记忆上限更高（~20条），因为她们是主要 RP 对象
+- 鼠鼠记忆上限约 15 条，天使记忆上限约 20 条（防止变量过大）
+- 超出时，代码在 `VARIABLE_UPDATE_ENDED` 钩子中自动压缩：用 `_(memory).entries().takeRight(上限)` 保留最新条目
+- key 以 `!` 开头的条目标记为重要（如 `"!t3_adopted"`），压缩时优先保留
+- 记忆的注入和压缩由代码管理，AI 只负责生成新的记忆文本
 
 ### 玩家主动互动
 
@@ -335,90 +425,130 @@
 
 ## 数据结构概览
 
+遵循 MVU 约定：`z.record()` 代替 `z.array()`（键值对天然幂等，JSONPatch 路径可寻址），`z.coerce.number()` + `z.transform(clamp)` 代替 `min/max`。
+
+字段标注 `[代码]` 表示代码管理、AI 不碰；`[AI]` 表示 AI 通过 JSONPatch 更新。
+
 ```typescript
-// 游戏全局状态
+// 游戏全局状态 — stat_data 的顶层结构
 interface GameState {
-  energy: number;           // 当前能源
+  // ─── [代码] 资源与进度 ───
+  energy: number;           // 当前能源，clamp(0, energyCap)
   energyCap: number;        // 能源上限
-  stardust: number;         // 星尘
+  stardust: number;         // 星尘，clamp(0, ∞)
   turn: number;             // 当前回合数
-  happiness: number;        // 全局心情值 (0-100)
-  hamsters: Hamster[];      // 鼠居民列表
-  facilities: Facility[];   // 已建造设施
-  angels: Angel[];          // 鼠天使列表（预设）
-  achievements: string[];   // 已解锁成就ID
-  pendingEvents: GameEvent[]; // 本回合待处理事件
+  happiness: number;        // 全局心情值，clamp(0, 100)
+
+  // ─── [代码] 角色与设施（机械属性由代码管理，记忆由 AI 写入） ───
+  hamsters: Record<string, Hamster>;     // 鼠居民，key = 鼠鼠ID
+  angels: Record<string, Angel>;         // 鼠天使，key = 天使ID (mianhua/luosi/xingxing/paofu)
+  facilities: Record<string, Facility>;  // 已建造设施，key = 设施ID
+
+  // ─── [代码] 成就 ───
+  achievements: Record<string, boolean>; // key = 成就ID，value = 是否已解锁
+
+  // ─── [AI] 事件与提案 ───
+  pending_events: Record<string, GameEvent>;  // 本回合待处理事件，key = 事件ID
+  adoption_proposal: AdoptionProposal | null; // 收养提案（AI 生成，玩家确认后由代码创建鼠鼠）
 }
 
-// 鼠居民（随机生成）
+// 鼠居民（AI 生成基础属性，代码管理机械状态）
 interface Hamster {
-  id: string;
   name: string;
   breed: string;            // 品种
-  personality: string[];    // 性格标签
+  personality: string[];    // 性格标签（1-2个）
+  story: string;            // 背景故事（AI 生成）
+  basePower: number;        // 基础产能
+  preference: string;       // 偏好设施类型
+
+  // [代码] 机械属性
   mood: number;             // 心情 0-100
   stamina: number;          // 体力 0-100
-  preference: string;       // 偏好设施类型
-  basePower: number;        // 基础产能
-  story: string;            // 背景故事
   assignedTo: string | null; // 当前分配的设施ID
-  memory: MemoryEntry[];    // 个体记忆
+
+  // [AI] 个体记忆
+  memory: Record<string, string>; // key = 记忆ID（如 "t3_adopted"），value = 摘要文本
 }
 
 // 鼠天使（预设角色）
 interface Angel {
-  id: string;               // 预设ID，如 "mianhua", "luosi"
   name: string;             // 显示名
+
+  // [代码] 机械属性
   level: number;            // 等级 1-5
-  manageDomain: string;     // 管理方向："life" | "power" | "stardust" | "social"
-  assignedFacility: string | null; // 当前管理的设施ID
-  skills: SkillState[];
-  memory: MemoryEntry[];    // 个体记忆（上限更高）
-  exp: number;              // 经验值（管理设施累计回合等）
+  exp: number;              // 经验值
+  manageDomain: string;     // 管理方向
+  assignedFacility: string | null;
+  skills: Record<string, SkillState>; // key = skillId
+
+  // [AI] 个体记忆
+  memory: Record<string, string>; // key = 记忆ID，value = 摘要文本
 }
 
-// 个体记忆条目
-interface MemoryEntry {
-  turn: number;             // 发生的回合
-  text: string;             // 摘要文本
-  important: boolean;       // 重要标记（不会被自动压缩）
-}
-
-// 设施
-interface Facility {
-  id: string;
-  type: string;             // 设施类型ID
-  level: number;            // 等级 1-4
-  capacity: number;         // 容量
-  occupants: string[];      // 当前使用的鼠鼠ID列表
-  managedBy: string | null; // 管理该设施的天使ID
-  requiredAngelLevel: number; // 需要的天使等级
-}
-
-// 技能状态
+// 技能状态 [代码管理]
 interface SkillState {
-  skillId: string;
-  level: number;            // 技能等级
-  cooldownLeft: number;     // 剩余冷却回合数
-  unlockedAtAngelLevel: number; // 天使几级解锁此技能
+  level: number;
+  cooldownLeft: number;
+  unlockedAtAngelLevel: number;
 }
 
-// 本回合事件（AI生成，代码解析）
+// 设施 [代码管理]
+interface Facility {
+  type: string;             // 设施类型ID
+  level: number;            // 等级 1-3
+  capacity: number;
+  occupants: Record<string, boolean>; // key = 鼠鼠ID（用 record 代替数组，便于增删）
+  managedBy: string | null;
+  requiredAngelLevel: number;
+}
+
+// 本回合事件 [AI 生成]
 interface GameEvent {
-  id: string;
   description: string;      // AI 生成的叙事描述
-  relatedCharacters: string[]; // 关联的角色ID（鼠鼠或天使）
-  options: EventOption[];
+  related_characters: string[]; // 关联的角色ID
+  options: Record<string, EventOption>; // key = 选项标识（如 "a", "b", "c"）
 }
 
+// 事件选项 [AI 生成，代码结算]
 interface EventOption {
   label: string;            // 选项文字
-  energyDelta: number;      // ⚡ 变化
-  stardustDelta: number;    // ✨ 变化
-  moodDelta: number;        // 💛 变化（全局或指定角色）
-  moodTarget?: string;      // 心情变化的目标角色ID，空则全局
-  isSilly?: boolean;        // 是否恶搞选项
+  energy_delta: number;     // ⚡ 变化（AI 标注预期值，代码执行结算）
+  stardust_delta: number;   // ✨ 变化
+  mood_delta: number;       // 💛 变化
+  mood_target?: string;     // 心情变化的目标角色ID，空则全局
+  is_silly?: boolean;       // 是否恶搞选项
 }
+
+// 收养提案 [AI 生成]
+interface AdoptionProposal {
+  name: string;
+  breed: string;
+  personality: string[];
+  basePower: number;
+  preference: string;
+  story: string;
+}
+```
+
+### JSONPatch 路径示例
+
+AI 通过 JSONPatch 更新变量时的路径对应关系：
+
+```jsonc
+// AI 生成新事件
+{ "op": "insert", "path": "/pending_events/evt_1", "value": { "description": "...", "options": { ... } } }
+
+// AI 为鼠鼠写入记忆
+{ "op": "insert", "path": "/hamsters/puding/memory/t5_flew", "value": "从跑轮上飞出去，主人接住了她" }
+
+// AI 为天使写入记忆
+{ "op": "insert", "path": "/angels/mianhua/memory/t5_healed", "value": "治愈了受惊的布丁" }
+
+// AI 提交收养提案
+{ "op": "replace", "path": "/adoption_proposal", "value": { "name": "奶茶", "breed": "milk_tea", ... } }
+
+// 代码结算后清除已处理事件（代码操作，非 AI）
+{ "op": "remove", "path": "/pending_events/evt_1" }
 ```
 
 ---
@@ -465,32 +595,60 @@ interface EventOption {
 
 ## AI 与代码的分工
 
-| 职责 | 代码 | AI |
-|------|------|-----|
-| 资源计算 | ✅ 精确结算 | |
-| 设施建造/升级 | ✅ 数值变更、前提检查 | 描述建造过程 |
-| 每回合事件生成 | 决定数量和类型槽位 | ✅ 生成叙事、选项、资源标注 |
-| 玩家选择的后果 | ✅ 数值结算 | ✅ 生成结果叙事 |
-| 新鼠鼠生成 | 确定属性范围 | ✅ 生成名字、性格、故事 |
-| 个体互动 | 加载/保存个体记忆 | ✅ 参考记忆进行 RP |
-| 鼠天使对话 | 技能冷却和效果 | ✅ 以该天使人格进行 RP |
-| 记忆管理 | ✅ 写入、压缩、按需注入 | 生成记忆摘要文本 |
+| 职责 | 代码负责 | AI 负责 | 交互方式 |
+|------|---------|---------|----------|
+| 资源结算 | 精确计算产能、扣费 | — | 代码直接修改 stat_data |
+| 设施建造/升级 | 前提检查、数值变更 | — | 玩家 UI 操作 → 代码修改 |
+| 鼠鼠分配 | 容量检查、状态变更 | — | 玩家 UI 操作 → 代码修改 |
+| 回合结算 | 产能、体力、冷却、心情 | — | 推进回合时代码执行 |
+| 成就检测 | 条件检查、奖励发放 | — | 回合结算后代码检测 |
+| 事件生成 | 通过提示词指定数量和类型 | 生成叙事、选项、资源标注 | AI 通过 JSONPatch 写入 `pending_events` |
+| 事件选项结算 | 读取选项 delta 值执行结算 | — | 玩家选择后代码处理 |
+| 新鼠鼠生成 | 提供属性范围约束 | 生成名字、品种、性格、故事 | AI 通过 JSONPatch 写入 `adoption_proposal` |
+| 收养确认 | 创建正式鼠鼠条目、扣费 | — | 玩家确认后代码执行 |
+| 记忆写入 | 压缩旧记忆（超限时） | 为涉及角色生成记忆摘要 | AI 通过 JSONPatch 写入角色 `memory` |
+| 角色 RP | 注入角色人设+记忆 | 以角色人格生成对话 | 叙事文本在消息正文中 |
+| 技能使用 | 冷却检查、效果结算 | 以天使语气描述施放过程 | 代码结算 + AI 叙事 |
 
-### AI 提示词注入策略
+### AI 输出结构
 
-**每回合必定注入**：
-- 当前资源状况（⚡/✨/💛 + 上限）
-- 回合数、鼠鼠总数
-- 本回合需生成的事件数量和类型槽位
-- 所有鼠鼠的名字+品种+性格标签（简表，不含记忆）
-- 所有鼠天使的名字+等级+状态
+AI 每次回复包含两部分：
 
-**按需注入（仅涉及到时）**：
-- 被关联角色的个体记忆（事件涉及该角色时）
-- 玩家主动互动的角色的个体记忆
-- 鼠天使技能描述（使用技能时）
+```
+（叙事文本：温馨治愈的故事内容，玩家直接阅读）
 
-这样设计使得基础提示词保持精简，只在需要时加载详细记忆。
+<UpdateVariable>
+<Analysis>
+- turn 6: 2 daily events generated, 1 involves puding...
+</Analysis>
+<JSONPatch>
+[
+  { "op": "insert", "path": "/pending_events/evt_6a", "value": { "description": "...", "options": { ... } } },
+  { "op": "insert", "path": "/pending_events/evt_6b", "value": { ... } },
+  { "op": "insert", "path": "/hamsters/puding/memory/t6_sneeze", "value": "打喷嚏从跑轮上飞出去" },
+  { "op": "insert", "path": "/angels/mianhua/memory/t6_worried", "value": "担心布丁受伤，跑去检查" }
+]
+</JSONPatch>
+</UpdateVariable>
+
+<StatusPlaceHolderImpl/>
+```
+
+### 提示词注入策略
+
+提示词通过 EJS 模板从 stat_data 动态生成，分为必定注入和按需注入：
+
+**每回合必定注入**（世界书 EJS 模板）：
+- 资源状况：energy/energyCap/stardust/happiness/turn
+- 鼠鼠简表：名字、品种、性格、心情、体力、位置（不含记忆）
+- 天使简表：名字、等级、技能冷却、管理设施
+- 设施简表：类型、等级、容量、使用者
+- 事件生成指令：数量、类型、关联角色约束
+
+**按需注入**（EJS 条件判断）：
+- 涉及角色的个体记忆（该角色出现在事件中时）
+- 玩家主动互动的角色记忆
+- 阶段性指令（回合数不同时，事件复杂度不同）
 
 ---
 

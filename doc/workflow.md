@@ -226,26 +226,17 @@ Tailwind CSS，在 iframe 内运行，与酒馆样式隔离。温馨治愈风格
 1. applyEventChoice() → 结算玩家选择
 2. settleTurn() → 回合结算（产能、体力、心情等）
 3. checkAchievements() → 成就检测
-4. rollEventSlots() → 决定下回合事件槽
-5. buildTurnPrompt() → 组装提示词
-6. saveGameState() → 写入 MVU
-7. createChatMessages(user) → 静默创建 user 楼层
-8. generate() → 调用 LLM
-9. 解析 AI 回复 → 提取事件叙事、选项、新鼠鼠数据等
-10. 更新 pendingEvents → saveGameState()
-11. createChatMessages(assistant) → 静默创建 assistant 楼层
-12. 前端刷新
+4. saveGameState() → 写入 MVU
+5. createChatMessages(user) → 静默创建 user 楼层（包含动态提示词）
+6. generate() → 调用 LLM
+7. AI 输出 <UpdateVariable><JSONPatch> → MVU 自动解析更新 stat_data
+8. VARIABLE_UPDATE_ENDED 事件触发 → 引擎后处理结算
+9. 前端刷新
 ```
 
 ### 4.3 AI 回复解析
 
-文件：`src/鼠鼠天堂/bridge/parse.ts`
-
-AI 回复需遵循约定格式（通过提示词约束），代码解析：
-- 事件叙事和选项（含资源标注）
-- 新鼠鼠数据（收养事件时）
-- 记忆摘要文本（写入相关角色记忆）
-- 鼠天使 RP 对话内容
+AI 回复使用标准 MVU `<UpdateVariable><JSONPatch>` 格式，由 MVU 框架自动解析并更新 `stat_data`。代码通过 `VARIABLE_UPDATE_ENDED` 事件钩子获取更新后的 GameState，执行引擎结算（产能、体力、成就等）。不需要自定义 XML 解析器。
 
 ### 4.4 个体互动流程
 
@@ -262,35 +253,60 @@ AI 回复需遵循约定格式（通过提示词约束），代码解析：
 
 ## Phase 5: 提示词工程
 
-**目标**：撰写角色卡的全部提示词，确保 AI 输出格式稳定、叙事质量达标。
+**目标**：撰写全部提示词，确保 AI 输出格式稳定、叙事质量达标。
 
-### 5.1 系统提示词
+提示词分布在三个位置：
+- **预设**（`空白预设/空白预设.yaml`）— 身份定义、全局指令等与角色卡无关的系统级提示词
+- **角色卡世界书**（`鼠鼠天堂/鼠鼠天堂.yaml` 的条目）— 鼠天使人设、MVU 变量规则、输出格式等与角色卡绑定的内容
+- **提示词模板**（EJS 语法）— 世界书条目中使用，根据 MVU 变量动态生成提示词内容
 
-- 世界观设定（乐园背景、基调）
-- AI 角色定义（作为"叙事引擎"的职责边界）
-- 输出格式约定（事件结构、资源标注格式、标签规范）
+预设结构说明：预设负责将人设、世界书、系统提示词、聊天记录组合成最终发送给 AI 的 prompt。以 `id:` 开头的条目（如 `id: 角色定义之前`、`id: 聊天记录`）是酒馆内置的不可修改项，对应角色卡中提取的内容；自定义的 `名称:` 条目可自由编辑。
 
-### 5.2 鼠天使人设
+提示词模板说明（参考 `doc/提示词模板用法.md`）：在世界书条目中使用 EJS 语法，通过 `getvar()` 读取 MVU 变量，实现全蓝灯世界书下的动态提示词。例如：
+```
+<% if (getvar('stat_data.turn', { defaults: 0 }) > 10) { %>
+乐园已进入发展期，事件可以更复杂。
+<% } %>
+```
+变量路径对应 `stat_data` 下的 GameState 字段（如 `stat_data.energy`、`stat_data.hamsters` 等）。
 
-每位天使的独立人设卡：
+### 5.1 预设：系统提示词
+
+文件：`空白预设/空白预设.yaml` → `提示词` 列表中的自定义条目
+
+- **身份**（已有占位）：AI 作为"鼠鼠天堂叙事引擎"的职责边界、输出规范
+- **Auxiliary Prompt**（已有空位）：世界观背景、基调约定
+- **Post-History Instructions**（已有空位）：每轮末尾提醒（格式合规、资源上限等）
+
+### 5.2 世界书：鼠天使人设
+
+角色卡世界书新增条目，每位天使的独立人设卡：
 - 外表描述、语气特征、口癖
 - 性格深度（不是单一标签，要有层次）
 - 与其他天使的关系
+- 插入位置：角色定义之前，按需激活（关键词或蓝灯）
 
-### 5.3 回合提示词模板
+### 5.3 世界书：动态回合提示词
 
-每回合注入的动态提示词模板，slot 由 `buildTurnPrompt()` 填充：
-- 当前资源状态
-- 鼠鼠简表
-- 天使简表+冷却状态
+世界书条目使用提示词模板（EJS），根据 MVU 变量动态生成每回合注入的内容：
+- 当前资源状态（从 `stat_data.energy/stardust/happiness` 读取）
+- 鼠鼠简表（遍历 `stat_data.hamsters`）
+- 天使简表+冷却状态（遍历 `stat_data.angels`）
 - 事件生成指令（数量、类型、关联角色）
+- 按回合阶段切换提示词（如 `stat_data.turn > 10` 时引入更复杂事件）
 - [按需] 个体记忆
 
-### 5.4 输出格式与解析
+注意：此处的提示词模板替代了 Phase 2 中 `buildTurnPrompt()` 的部分职责 — 静态提示词模板用 EJS 在世界书中实现，`buildTurnPrompt()` 仍负责 Phase 4 中通过代码动态组装的部分（如事件槽位指令）。
 
-定义 AI 回复的结构化标签（如 `<event>`, `<option>`, `<memory>` 等），需与 parse.ts 对齐。反复测试格式稳定性。
+### 5.4 世界书：变量更新规则与输出格式
 
-### 5.5 摘要提示词
+使用标准 MVU 格式，AI 通过 `<UpdateVariable><JSONPatch>` 更新 `stat_data`：
+- `变量更新规则` — 告知 AI 各字段含义、路径、取值范围，指导 AI 生成正确的 JSONPatch 操作
+- `变量输出格式` — 定义 `<UpdateVariable><Analysis>...</Analysis><JSONPatch>[...]</JSONPatch></UpdateVariable>` 标准格式
+- 所有游戏内容（事件叙事、选项、新鼠鼠、记忆等）都是 `stat_data` 中的字段，通过 JSONPatch 更新
+- Schema.ts 的 Zod 校验自动修正越界值（如 `z.transform(v => _.clamp(v, 0, 100))`），AI 不需要精确计算边界
+
+### 5.5 预设：摘要提示词
 
 用于酒馆摘要功能，压缩历史对话时保留关键游戏状态信息。
 
@@ -369,13 +385,13 @@ Phase 3 和 Phase 5 可以并行推进：前端不依赖具体提示词内容，
 
 ### Phase 2 ✅
 
-MVU 集成，关键设计：**AI 不用标准 JSONPatch 更新变量，代码管理全部 GameState，AI 只输出自定义 XML 事件格式**。
+MVU 集成，关键设计：**AI 使用标准 `<UpdateVariable><JSONPatch>` 格式更新变量**，Schema.ts 通过 Zod 校验保证数据正确性，代码在 `VARIABLE_UPDATE_ENDED` 钩子中执行游戏引擎结算。
 
 角色卡目录 `鼠鼠天堂/`：
 - `世界书/变量/initvar.yaml` — 初始状态 YAML（与 createInitialGameState 一致）
 - `世界书/变量/变量列表.txt` — `{{format_message_variable::stat_data}}`
-- `世界书/变量/变量更新规则.yaml` — 告知 AI 状态含义 + "你不需要输出变量更新指令"
-- `世界书/变量/变量输出格式.yaml` — 定义 `<event>/<option>/<memory>/<new_hamster>` XML 标签格式
+- `世界书/变量/变量更新规则.yaml` — 告知 AI 各字段含义、路径、取值范围，指导生成正确的 JSONPatch
+- `世界书/变量/变量输出格式.yaml` — 定义标准 `<UpdateVariable><Analysis>...<JSONPatch>[...]</JSONPatch></UpdateVariable>` 格式
 - `鼠鼠天堂.yaml` — 添加世界书条目（initvar/列表/规则/输出格式）+ 脚本库（MVU/变量结构）
 
 源码 `src/鼠鼠天堂/`：
@@ -386,3 +402,40 @@ MVU 集成，关键设计：**AI 不用标准 JSONPatch 更新变量，代码管
 
 所有 URL 已从 localhost 改为 jsdelivr CDN (`testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/0.0.0/...`)。
 webpack 构建通过，脚本输出到 `dist/0.0.0/鼠鼠天堂/脚本/`。
+
+### Phase 3 ✅
+
+React 前端界面，运行在 SillyTavern iframe 内。
+
+`src/鼠鼠天堂/界面/主界面/`：
+- `store.tsx` — React Context + useReducer 全局状态管理，自动从 MVU 加载/保存 GameState，所有操作通过 dispatch action 调用 engine 函数；加载失败时 fallback 到初始状态
+- `App.tsx` — 6 标签页切换布局（总览|鼠鼠|设施|天使|事件|日志）
+- `styles.css` — Tailwind CSS 4 入口 + 功能性基础样式（卡片、进度条、标签栏、按钮、资源变化标注）
+- `index.tsx` — 引入 styles.css，挂载 React 到 #root
+- `views/Overview.tsx` — 资源栏(⚡/✨/💛进度条)、回合数、产能预览、待处理事件提示、推进回合按钮
+- `views/Events.tsx` — 事件卡片列表、选项按钮(标注资源delta)、恶搞选项虚线边框
+- `views/Facilities.tsx` — 已建设施卡片(等级/容量/管理天使)、建造面板(按类别分组，灰显不满足条件)、升级按钮
+- `views/Hamsters.tsx` — 鼠鼠卡片(心情/体力进度条)、展开详情(故事/偏好/记忆)、分配到设施选择器
+- `views/Angels.tsx` — 天使卡片(等级/领域/管理设施)、技能按钮(冷却/锁定状态)、需目标选择的技能弹出面板、升级按钮
+- `views/Log.tsx` — 成就进度(8/8列表带解锁状态)、事件日志(按回合倒序，带类型图标)
+
+修复：`loadGameState` 改用 `safeParse` 避免校验失败阻塞加载；store catch 块增加 fallback dispatch。
+
+已知限制：Phase 3 阶段无 AI 交互，对话停留在 message 0，变量在重载时被 `<initvar>` 覆盖，持久化需 Phase 4 创建新消息楼层后解决。
+
+### Phase 5 ✅
+
+提示词工程，分布在预设 + 世界书 + 提示词模板（EJS）三个位置。
+
+预设 `空白预设/空白预设.yaml`：
+- **身份** — AI 作为叙事引擎的职责（生成事件/RP天使/生成新鼠鼠/维护记忆连续性）+ 不做的事（不输出变量更新/不自行结算/不跳出治愈基调）+ 叙事风格（温馨幽默、第三人称、2-4句简洁叙事）
+- **Auxiliary Prompt** — 世界观（云朵乐园、快乐电力、星尘资源）
+- **Post-History Instructions** — 回复检查清单（8项：UpdateVariable/JSONPatch格式、选项标注、memory字段、StatusPlaceHolderImpl占位符等）— ⚠️ 待更新为标准MVU格式描述
+- **摘要提示词** — 压缩对话时保留重大事件/选择后果/角色关系，省略重复日常/纯数值变动
+
+世界书 `鼠鼠天堂/鼠鼠天堂.yaml` 新增条目：
+- `世界书/天使人设/` — 4位天使独立人设（外表/性格表里层/口癖语气/与其他天使关系/管理风格）：棉花(温柔治愈)、螺丝(暴躁认真)、星星(神秘安静)、泡芙(话多乐天)
+- `世界书/回合/状态摘要.txt` — EJS 模板，用 `getvar('stat_data.*')` 动态生成资源/鼠鼠/天使/设施简表
+- `世界书/回合/事件指令.txt` — EJS 模板，按回合阶段(≤3新手引导/≤10新手期/≤30发展期/30+成熟期)生成不同事件指令，含新鼠鼠属性范围和资源扣除上限
+
+角色卡 yaml 注册了全部新条目：天使人设文件夹(4条目，蓝灯，角色定义之前)、回合文件夹(状态摘要+事件指令，蓝灯，指定深度0)。
