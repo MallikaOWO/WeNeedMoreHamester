@@ -6,6 +6,22 @@ import { Schema } from '../schema';
 import { createInitialGameState } from '../data/init';
 import { FACILITY_DEFS } from '../data/facilities';
 
+/**
+ * 确保存在非零消息楼层用于持久化。
+ * Message 0 的变量在重载时会被 initvar 覆盖，因此需要一个 message 1+ 来存储前端修改的数据。
+ * 调用后 'latest' 一定指向 message 1+。
+ */
+export async function ensurePersistenceLayer(): Promise<void> {
+  if (getLastMessageId() > 0) return;
+
+  // 将 message 0 的 MVU 数据复制到新的 assistant 楼层
+  const mvuData = Mvu.getMvuData({ type: 'message', message_id: 0 });
+  await createChatMessages(
+    [{ role: 'assistant', message: ' ', data: _.cloneDeep(mvuData) }],
+    { refresh: 'none' },
+  );
+}
+
 /** 从 MVU 读取当前 GameState */
 export function loadGameState(messageId?: number): GameState {
   const option: VariableOption = {
@@ -28,11 +44,18 @@ export function loadGameState(messageId?: number): GameState {
   return statData as GameState;
 }
 
-/** 将 GameState 写回 MVU */
+/** 将 GameState 写回 MVU（始终写入 'latest'，确保不会写到 message 0） */
 export async function saveGameState(state: GameState, messageId?: number): Promise<void> {
+  const targetId = messageId ?? 'latest';
+
+  // 如果只有 message 0，先创建持久化层，避免数据被 initvar 覆盖
+  if (targetId === 'latest' && getLastMessageId() === 0) {
+    await ensurePersistenceLayer();
+  }
+
   const option: VariableOption = {
     type: 'message',
-    message_id: messageId ?? 'latest',
+    message_id: targetId,
   };
   const mvuData = Mvu.getMvuData(option);
   _.set(mvuData, 'stat_data', state);

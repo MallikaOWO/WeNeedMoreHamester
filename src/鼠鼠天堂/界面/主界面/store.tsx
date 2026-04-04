@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useRef, useCallback } from 'react';
 import type { GameState, Hamster } from '../../schema';
-import { loadGameState, saveGameState } from '../../bridge/state';
+import { loadGameState, saveGameState, ensurePersistenceLayer } from '../../bridge/state';
 import { createInitialGameState } from '../../data/init';
 
 // engine imports
@@ -231,43 +231,53 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [state, dispatch] = useReducer(reducer, initialAppState);
   const initialized = useRef(false);
 
-  // 初始化：从 MVU 加载状态
+  // 初始化：确保持久化层 → 从 MVU 加载状态
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
-    try {
-      const gameState = loadGameState();
-      dispatch({ type: 'LOAD', state: gameState });
-    } catch (e) {
-      console.error('[鼠鼠天堂] 加载状态失败，使用初始状态:', e);
-      dispatch({ type: 'LOAD', state: createInitialGameState() });
-    }
+    (async () => {
+      try {
+        await ensurePersistenceLayer();
+        const gameState = loadGameState();
+        dispatch({ type: 'LOAD', state: gameState });
+      } catch (e) {
+        console.error('[鼠鼠天堂] 加载状态失败，使用初始状态:', e);
+        dispatch({ type: 'LOAD', state: createInitialGameState() });
+      }
+    })();
   }, []);
 
-  // 自动保存：game 变化时写回 MVU
+  // 自动保存：game 变化时写回 MVU（生成中跳过，由生成流程自行管理）
   const prevGame = useRef(state.game);
   useEffect(() => {
-    if (state.loading) return;
+    if (state.loading || state.generating) return;
     if (prevGame.current === state.game) return;
     prevGame.current = state.game;
     saveGameState(state.game).catch(e => {
       console.error('[鼠鼠天堂] 保存状态失败:', e);
     });
-  }, [state.game, state.loading]);
+  }, [state.game, state.loading, state.generating]);
+
+  // 用 ref 追踪最新 game state，供异步回调读取（避免闭包捕获旧值）
+  const gameRef = useRef(state.game);
+  gameRef.current = state.game;
 
   /**
    * 同层前端核心流程：
-   * ① createChatMessages(user) → 静默创建 user 楼层（附带 MVU 数据）
-   * ② generate() → 调用 LLM 获取回复文本
-   * ③ Mvu.parseMessage() → 解析 AI 输出中的 UpdateVariable/JSONPatch
-   * ④ createChatMessages(assistant) → 静默创建 assistant 楼层（附带更新后的 MVU 数据）
-   * ⑤ 重载前端状态
+   * ① 将当前 React 状态写入 MVU（确保一致性）
+   * ② createChatMessages(user) → 静默创建 user 楼层（附带 MVU 数据）
+   * ③ generate() → 调用 LLM 获取回复文本
+   * ④ Mvu.parseMessage() → 解析 AI 输出中的 UpdateVariable/JSONPatch
+   * ⑤ createChatMessages(assistant) → 静默创建 assistant 楼层（附带更新后的 MVU 数据）
    */
-  const sendAndGenerate = useCallback(async (userMessage: string) => {
-    // 读取当前最新楼层的 MVU 数据作为 base
+  const sendAndGenerate = useCallback(async (userMessage: string, gameState: GameState) => {
+    // ① 先将传入的 game state 写入 MVU，确保 MVU 数据与 React 状态一致
+    await saveGameState(gameState);
+
+    // 读取完整 MVU 数据（含 stat_data 和其他 MVU 元数据）
     const baseMvuData = Mvu.getMvuData({ type: 'message', message_id: 'latest' });
 
-    // ① 创建 user 楼层（携带当前 MVU 数据，refresh:'none' 不刷新显示）
+    // ② 创建 user 楼层（携带当前 MVU 数据，refresh:'none' 不刷新显示）
     await createChatMessages(
       [{ role: 'user', message: userMessage, data: _.cloneDeep(baseMvuData) }],
       { refresh: 'none' },
@@ -275,7 +285,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     let aiText: string;
     try {
-      // ② 调用 LLM 生成（流式）
+      // ③ 调用 LLM 生成（流式）
       aiText = await generate({ should_stream: true });
     } catch (e) {
       // 生成失败 → 回退：删除刚创建的 user 楼层
@@ -285,11 +295,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       throw e;
     }
 
-    // ③ 解析 AI 输出中的变量更新命令（UpdateVariable/JSONPatch）
+    // ④ 解析 AI 输出中的变量更新命令（UpdateVariable/JSONPatch）
     const parsedData = await Mvu.parseMessage(aiText, _.cloneDeep(baseMvuData));
     const finalData = parsedData ?? baseMvuData;
 
-    // ④ 创建 assistant 楼层（携带解析后的 MVU 数据）
+    // ⑤ 创建 assistant 楼层（携带解析后的 MVU 数据）
     await createChatMessages(
       [{ role: 'assistant', message: aiText, data: finalData }],
       { refresh: 'none' },
@@ -299,27 +309,28 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // 4.2 推进回合并触发 AI 生成
   const advanceTurnAndGenerate = useCallback(async () => {
     if (state.generating) return;
-
-    // 1. 引擎结算（同步 reducer）
-    dispatch({ type: 'ADVANCE_TURN' });
     dispatch({ type: 'SET_GENERATING', generating: true });
 
     try {
-      // 2. 确保结算后的状态已写入 MVU
-      const freshState = loadGameState();
-      const game = checkAchievements(settleTurn(tickCooldowns(freshState))).state;
-      await saveGameState(game);
+      // 1. 从当前 React 状态直接计算结算结果（不从 MVU 读，避免竞态）
+      let game = state.game;
+      game = settleTurn(game);
+      game = tickCooldowns(game);
+      game = checkAchievements(game).state;
 
-      // 3. 同层前端流程：创建消息 → 生成 → 解析 → 创建回复
-      await sendAndGenerate(`[推进到回合 ${game.turn}]`);
+      // 2. 同步更新 React 状态
+      dispatch({ type: 'ADVANCE_TURN' });
 
-      // 4. 从最新楼层重新加载状态
+      // 3. 同层前端流程：先保存结算后状态 → 创建消息 → AI 生成 → 解析回复
+      await sendAndGenerate(`[推进到回合 ${game.turn}]`, game);
+
+      // 4. 从最新楼层重新加载 AI 更新后的状态
       dispatch({ type: 'RELOAD' });
     } catch (e) {
       console.error('[鼠鼠天堂] 回合推进失败:', e);
       dispatch({ type: 'SET_GENERATING', generating: false });
     }
-  }, [state.generating, sendAndGenerate]);
+  }, [state.game, state.generating, sendAndGenerate]);
 
   // 4.4 个体互动
   const interactWithCharacter = useCallback(async (characterId: string) => {
@@ -327,17 +338,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     dispatch({ type: 'SET_GENERATING', generating: true });
 
     try {
-      const game = loadGameState();
-      const character = game.hamsters[characterId] || game.angels[characterId];
+      // 直接从 React 状态读取角色信息（不从 MVU 读）
+      const character = state.game.hamsters[characterId] || state.game.angels[characterId];
       const name = character?.name ?? characterId;
 
-      await sendAndGenerate(`[与${name}互动]`);
+      await sendAndGenerate(`[与${name}互动]`, state.game);
       dispatch({ type: 'RELOAD' });
     } catch (e) {
       console.error('[鼠鼠天堂] 互动失败:', e);
       dispatch({ type: 'SET_GENERATING', generating: false });
     }
-  }, [state.generating, sendAndGenerate]);
+  }, [state.game, state.generating, sendAndGenerate]);
 
   return (
     <StoreContext.Provider value={{ state, dispatch, advanceTurnAndGenerate, interactWithCharacter }}>
