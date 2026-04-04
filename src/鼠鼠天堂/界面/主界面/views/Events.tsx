@@ -43,7 +43,9 @@ const Events: React.FC = () => {
             <button
               className="btn btn-primary"
               onClick={() => {
-                const id = proposal.name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now().toString(36);
+                // 生成简洁可预测的 ID：hamster_1, hamster_2, ...
+                const existingCount = Object.keys(state.game.hamsters).length;
+                const id = `hamster_${existingCount + 1}`;
                 dispatch({
                   type: 'ADOPT_HAMSTER',
                   hamsterId: id,

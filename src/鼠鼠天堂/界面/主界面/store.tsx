@@ -31,6 +31,10 @@ export interface AppState {
   loading: boolean;
   /** AI 正在生成中 */
   generating: boolean;
+  /** 当前回合的叙事文本（从 AI 的 <Narrative> 标签中提取） */
+  narrative: string;
+  /** AI 原始输出（调试用） */
+  rawAiOutput: string;
 }
 
 // ── Actions ──
@@ -51,6 +55,7 @@ export type Action =
   | { type: 'ADVANCE_TURN' }
   | { type: 'DISMISS_PROPOSAL' }
   | { type: 'SET_GENERATING'; generating: boolean }
+  | { type: 'SET_AI_OUTPUT'; narrative: string; rawOutput: string }
   | { type: 'RELOAD' };
 
 // ── Reducer ──
@@ -182,6 +187,9 @@ function reducer(state: AppState, action: Action): AppState {
     case 'SET_GENERATING':
       return { ...state, generating: action.generating };
 
+    case 'SET_AI_OUTPUT':
+      return { ...state, narrative: action.narrative, rawAiOutput: action.rawOutput };
+
     case 'RELOAD': {
       // 从 MVU 重新加载最新状态（AI 更新后调用）
       try {
@@ -226,6 +234,12 @@ export function useDispatch(): React.Dispatch<Action> {
 
 // ── Provider ──
 
+/** 从 AI 输出中提取 <Narrative> 标签内容 */
+function parseNarrative(aiText: string): string {
+  const match = aiText.match(/<Narrative>([\s\S]*?)<\/Narrative>/i);
+  return match ? match[1].trim() : '';
+}
+
 const initialAppState: AppState = {
   game: {
     energy: 0, energyCap: 0, stardust: 0, turn: 0, happiness: 0,
@@ -236,6 +250,8 @@ const initialAppState: AppState = {
   log: [],
   loading: true,
   generating: false,
+  narrative: '',
+  rawAiOutput: '',
 };
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -281,7 +297,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
    * ④ Mvu.parseMessage() → 解析 AI 输出中的 UpdateVariable/JSONPatch
    * ⑤ createChatMessages(assistant) → 静默创建 assistant 楼层（附带更新后的 MVU 数据）
    */
-  const sendAndGenerate = useCallback(async (userMessage: string, gameState: GameState) => {
+  const sendAndGenerate = useCallback(async (userMessage: string, gameState: GameState): Promise<string> => {
     // ① 先将传入的 game state 写入 MVU，确保 MVU 数据与 React 状态一致
     await saveGameState(gameState);
 
@@ -326,6 +342,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       [{ role: 'assistant', message: aiText, data: finalData }],
       { refresh: 'none' },
     );
+
+    return aiText;
   }, []);
 
   // 4.2 推进回合并触发 AI 生成
@@ -344,9 +362,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       dispatch({ type: 'ADVANCE_TURN' });
 
       // 3. 同层前端流程：先保存结算后状态 → 创建消息 → AI 生成 → 解析回复
-      await sendAndGenerate(`[推进到回合 ${game.turn}]`, game);
+      const aiText = await sendAndGenerate(`[推进到回合 ${game.turn}]`, game);
 
-      // 4. 从最新楼层重新加载 AI 更新后的状态
+      // 4. 提取叙事文本，保存原始输出
+      dispatch({ type: 'SET_AI_OUTPUT', narrative: parseNarrative(aiText), rawOutput: aiText });
+
+      // 5. 从最新楼层重新加载 AI 更新后的状态
       dispatch({ type: 'RELOAD' });
     } catch (e) {
       console.error('[鼠鼠天堂] 回合推进失败:', e);
@@ -364,7 +385,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const character = state.game.hamsters[characterId] || state.game.angels[characterId];
       const name = character?.name ?? characterId;
 
-      await sendAndGenerate(`[与${name}互动]`, state.game);
+      const aiText = await sendAndGenerate(`[与${name}互动]`, state.game);
+      dispatch({ type: 'SET_AI_OUTPUT', narrative: parseNarrative(aiText), rawOutput: aiText });
       dispatch({ type: 'RELOAD' });
     } catch (e) {
       console.error('[鼠鼠天堂] 互动失败:', e);

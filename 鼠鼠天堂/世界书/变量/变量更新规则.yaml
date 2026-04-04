@@ -14,6 +14,7 @@
   hamsters.${鼠鼠ID}.memory:
     格式: "{ [记忆ID]: string }"
     check:
+      - 鼠鼠ID格式为 hamster_1, hamster_2, ...（由代码生成，参考变量中的实际ID）
       - 仅为本回合涉及的鼠鼠写入
       - 记忆ID格式 t{回合号}_{关键词}，如 t6_sneeze
       - 重要记忆 ID 以 ! 开头，如 !t3_adopted

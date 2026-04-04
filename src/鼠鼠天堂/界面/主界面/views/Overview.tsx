@@ -1,6 +1,6 @@
-// 3.3.1 总览页 — 资源栏 + 回合信息 + 推进回合
+// 3.3.1 总览页 — 资源栏 + 回合信息 + 叙事面板 + 推进回合
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../store';
 import { FACILITY_DEFS } from '../../../data/facilities';
 
@@ -47,6 +47,7 @@ function estimateProduction(game: ReturnType<typeof useStore>['state']['game']):
 
 const Overview: React.FC = () => {
   const { state, advanceTurnAndGenerate } = useStore();
+  const [showDebug, setShowDebug] = useState(false);
   const game = state.game;
   const estimated = estimateProduction(game);
   const pendingCount = Object.keys(game.pending_events).length;
@@ -64,6 +65,14 @@ const Overview: React.FC = () => {
           {hamsterCount} 只鼠鼠 | {facilityCount} 个设施 | {busyAngels} 天使值班
         </div>
       </div>
+
+      {/* 叙事面板 */}
+      {state.narrative && (
+        <div className="card narrative-panel" style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>本回合叙事</div>
+          <div style={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{state.narrative}</div>
+        </div>
+      )}
 
       {/* 资源 */}
       <div className="card" style={{ marginBottom: 12 }}>
@@ -109,6 +118,35 @@ const Overview: React.FC = () => {
       >
         {state.generating ? '正在生成...' : pendingCount > 0 ? '请先处理待处理事件' : '推进回合'}
       </button>
+
+      {/* 调试面板 */}
+      {state.rawAiOutput && (
+        <div style={{ marginTop: 12 }}>
+          <button
+            className="btn btn-sm"
+            style={{ color: '#9ca3af', fontSize: 11 }}
+            onClick={() => setShowDebug(!showDebug)}
+          >
+            {showDebug ? '收起' : '查看'} AI 原始输出
+          </button>
+          {showDebug && (
+            <div className="card debug-panel" style={{ marginTop: 6 }}>
+              <pre style={{
+                fontSize: 11,
+                lineHeight: 1.5,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+                maxHeight: 300,
+                overflow: 'auto',
+                margin: 0,
+                color: '#6b7280',
+              }}>
+                {state.rawAiOutput}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

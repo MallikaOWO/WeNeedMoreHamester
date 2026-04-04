@@ -252,6 +252,30 @@
         仅格式显示: true
         仅格式提示词: false
 
+    - 正则名称: "[界面]隐藏变量更新"
+      id: c61e1ced-aa51-4b26-9bda-25gfa5394435
+      启用: true
+      查找表达式: <UpdateVariable>[\s\S]*?</UpdateVariable>
+      内容: ""
+      来源:
+        用户输入: false
+        AI输出: true
+      作用于:
+        仅格式显示: true
+        仅格式提示词: true
+
+    - 正则名称: "[界面]清除叙事标签"
+      id: d72f2def-bb62-5c37-ace8-36hgb6405546
+      启用: true
+      查找表达式: </?Narrative>
+      内容: ""
+      来源:
+        用户输入: false
+        AI输出: true
+      作用于:
+        仅格式显示: true
+        仅格式提示词: false
+
   酒馆助手:
     脚本库:
       - 名称: mvu

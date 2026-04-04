@@ -104,6 +104,18 @@ body {
   font-size: 12px;
 }
 
+/* 叙事面板 */
+.narrative-panel {
+  background: #fffef5;
+  border-color: #e8e4d4;
+}
+
+/* 调试面板 */
+.debug-panel {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
 /* 资源变化标注 */
 .delta-pos { color: #16a34a; }
 .delta-neg { color: #dc2626; }
