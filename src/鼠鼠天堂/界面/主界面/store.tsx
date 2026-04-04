@@ -310,6 +310,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const parsedData = await Mvu.parseMessage(aiText, _.cloneDeep(baseMvuData));
     const finalData = parsedData ?? baseMvuData;
 
+    // 保护代码管理的字段（livingAt/workingAt），防止 AI 覆盖
+    const baseHamsters = _.get(baseMvuData, 'stat_data.hamsters') as Record<string, any> | undefined;
+    if (baseHamsters && parsedData) {
+      for (const [id, baseH] of Object.entries(baseHamsters)) {
+        if (_.has(finalData, `stat_data.hamsters.${id}`)) {
+          _.set(finalData, `stat_data.hamsters.${id}.livingAt`, baseH.livingAt ?? null);
+          _.set(finalData, `stat_data.hamsters.${id}.workingAt`, baseH.workingAt ?? null);
+        }
+      }
+    }
+
     // ⑤ 创建 assistant 楼层（携带解析后的 MVU 数据）
     await createChatMessages(
       [{ role: 'assistant', message: aiText, data: finalData }],
