@@ -1,9 +1,23 @@
+<% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); _%>
+<% var hKeys = Object.keys(hamsters); _%>
+<% var angels = getvar('stat_data.angels', {defaults: {}}); _%>
+<% var turn = getvar('stat_data.turn', {defaults: 0}); _%>
+<% var proposal = getvar('stat_data.adoption_proposal', {defaults: null}); _%>
+<%
+  var needAdoption = false;
+  if (!proposal) {
+    var roll = (turn * 13 + 7) % 10;
+    if (hKeys.length === 0) { needAdoption = true; }
+    else if (hKeys.length <= 2) { needAdoption = roll < 7; }
+    else if (hKeys.length <= 4) { needAdoption = roll < 4; }
+    else if (hKeys.length <= 6) { needAdoption = roll < 2; }
+    else { needAdoption = roll < 1; }
+  }
+_%>
 ---
 <current_variable>
 
 <hamster_profiles>
-<% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); _%>
-<% var hKeys = Object.keys(hamsters); _%>
 <% if (hKeys.length > 0) { _%>
 <% hKeys.forEach(function(id) { var h = hamsters[id]; _%>
 <%= id %>:
@@ -26,7 +40,6 @@
 </hamster_profiles>
 
 <angel_memories>
-<% var angels = getvar('stat_data.angels', {defaults: {}}); _%>
 <% Object.keys(angels).forEach(function(id) { var a = angels[id]; _%>
 <% var mem = a.memory || {}; var memKeys = Object.keys(mem); _%>
 <%= a.name %>[<%= id %>]:
@@ -43,9 +56,15 @@
 <pending_events>
 {{format_message_variable::stat_data.pending_events}}
 </pending_events>
+<% if (needAdoption || proposal) { %>
 
 <adoption_proposal>
+<% if (proposal) { _%>
 {{format_message_variable::stat_data.adoption_proposal}}
+<% } else { _%>
+null（本回合需要生成）
+<% } _%>
 </adoption_proposal>
+<% } _%>
 
 </current_variable>

@@ -1,3 +1,18 @@
+<% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); _%>
+<% var hamsterCount = Object.keys(hamsters).length; _%>
+<% var turn = getvar('stat_data.turn', {defaults: 0}); _%>
+<% var proposal = getvar('stat_data.adoption_proposal', {defaults: null}); _%>
+<%
+  var needAdoption = false;
+  if (!proposal) {
+    var roll = (turn * 13 + 7) % 10;
+    if (hamsterCount === 0) { needAdoption = true; }
+    else if (hamsterCount <= 2) { needAdoption = roll < 7; }
+    else if (hamsterCount <= 4) { needAdoption = roll < 4; }
+    else if (hamsterCount <= 6) { needAdoption = roll < 2; }
+    else { needAdoption = roll < 1; }
+  }
+_%>
 ---
 回复输出格式:
   rule:
@@ -16,24 +31,24 @@
     UpdateVariable:
       说明: 变量更新命令，JSON Patch 格式
       支持操作: replace / delta / insert / remove / move
-      仅允许更新: pending_events, hamsters.*.memory, angels.*.memory, adoption_proposal
+      路径格式: path 必须以 / 开头（如 "/pending_events/evt_1a"，不是 "pending_events/evt_1a"）
+      仅允许更新: pending_events, hamsters.*.memory, angels.*.memory<%= needAdoption ? ', adoption_proposal' : '' %>
       格式: |-
         <UpdateVariable>
-        <Analysis>$(IN ENGLISH, max 80 words: event count/types, characters involved, adoption included?)
+        <Analysis>$(IN ENGLISH, max 80 words: event count/types, characters involved<%= needAdoption ? ', adoption included' : '' %>)
         </Analysis>
         <JSONPatch>
         [
           { "op": "insert", "path": "/pending_events/${事件ID}", "value": { ... } },
           { "op": "insert", "path": "/hamsters/${鼠鼠ID}/memory/${记忆ID}", "value": "..." },
           { "op": "insert", "path": "/angels/${天使ID}/memory/${记忆ID}", "value": "..." },
+<% if (needAdoption) { _%>
+          { "op": "replace", "path": "/adoption_proposal", "value": { "name": "...", "breed": "...", "personality": "...", "basePower": 5, "preference": "...", "story": "..." } },
+<% } _%>
           ...
         ]
         </JSONPatch>
         </UpdateVariable>
-
-    StatusPlaceHolderImpl:
-      说明: 界面占位符，必须在回复最末尾
-      格式: <StatusPlaceHolderImpl/>
 
   example: |-
     <Narrative>
@@ -44,17 +59,15 @@
 
     <UpdateVariable>
     <Analysis>
-    Turn 6: 2 daily events. A: puding sneeze incident (puding, mianhua involved). B: xingxing senses underground glow (xingxing, luosi involved). No adoption.
+    Turn 6: 2 daily events. A: hamster_1 sneeze incident (hamster_1, mianhua involved). B: xingxing senses underground glow (xingxing, luosi involved). No adoption.
     </Analysis>
     <JSONPatch>
     [
-      { "op": "insert", "path": "/pending_events/evt_6a", "value": { "description": "布丁从跑轮上飞了出去！", "related_characters": "puding,mianhua", "options": { "a": { "label": "赶紧冲过去接住她", "energy_delta": 5, "stardust_delta": 0, "mood_delta": 10, "mood_target": "puding" }, "b": { "label": "让她体验飞翔的感觉", "energy_delta": 12, "stardust_delta": 0, "mood_delta": -5, "mood_target": "puding" }, "c": { "label": "你也跳上跑轮一起转", "energy_delta": -3, "stardust_delta": 0, "mood_delta": 15, "is_silly": true } } } },
+      { "op": "insert", "path": "/pending_events/evt_6a", "value": { "description": "布丁从跑轮上飞了出去！", "related_characters": "hamster_1,mianhua", "options": { "a": { "label": "赶紧冲过去接住她", "energy_delta": 5, "stardust_delta": 0, "mood_delta": 10, "mood_target": "hamster_1" }, "b": { "label": "让她体验飞翔的感觉", "energy_delta": 12, "stardust_delta": 0, "mood_delta": -5, "mood_target": "hamster_1" }, "c": { "label": "你也跳上跑轮一起转", "energy_delta": -3, "stardust_delta": 0, "mood_delta": 15, "is_silly": true } } } },
       { "op": "insert", "path": "/pending_events/evt_6b", "value": { "description": "星星感应到地下有神秘光源", "related_characters": "xingxing,luosi", "options": { "a": { "label": "派螺丝去挖掘", "energy_delta": 0, "stardust_delta": 8, "mood_delta": 0 }, "b": { "label": "全员寻宝大会！", "energy_delta": -10, "stardust_delta": 3, "mood_delta": 10 }, "c": { "label": "假装没听到", "energy_delta": 0, "stardust_delta": 0, "mood_delta": 0 } } } },
-      { "op": "insert", "path": "/hamsters/puding/memory/t6_sneeze", "value": "从跑轮上飞出去了，主人接住了她" },
+      { "op": "insert", "path": "/hamsters/hamster_1/memory/t6_sneeze", "value": "从跑轮上飞出去了，主人接住了她" },
       { "op": "insert", "path": "/angels/xingxing/memory/t6_sense", "value": "感应到地下有神秘光源，向园长报告" },
       { "op": "insert", "path": "/angels/mianhua/memory/t6_worried", "value": "担心布丁受伤，跑去检查" }
     ]
     </JSONPatch>
     </UpdateVariable>
-
-    <StatusPlaceHolderImpl/>

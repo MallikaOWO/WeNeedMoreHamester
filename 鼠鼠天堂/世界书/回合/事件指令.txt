@@ -3,40 +3,64 @@
 <% var stardust = getvar('stat_data.stardust', {defaults: 0}); _%>
 <% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); _%>
 <% var hamsterCount = Object.keys(hamsters).length; _%>
+<% var proposal = getvar('stat_data.adoption_proposal', {defaults: null}); _%>
+<%
+  // 收养概率：基于鼠鼠数量递减，用 turn 做伪随机种子
+  // 已有候选鼠鼠时不生成新的
+  var needAdoption = false;
+  if (!proposal) {
+    var roll = (turn * 13 + 7) % 10; // 0-9 伪随机
+    if (hamsterCount === 0) { needAdoption = true; }
+    else if (hamsterCount <= 2) { needAdoption = roll < 7; }  // 70%
+    else if (hamsterCount <= 4) { needAdoption = roll < 4; }  // 40%
+    else if (hamsterCount <= 6) { needAdoption = roll < 2; }  // 20%
+    else { needAdoption = roll < 1; }                         // 10%
+  }
+_%>
 <event_instruction>
 
 <% if (turn <= 3 && hamsterCount === 0) { _%>
 新园长引导期。本回合生成：
 1. 一个日常事件：乐园初建的温馨氛围，天使们准备迎接第一只鼠鼠
-2. 一个机遇事件：门口发现被遗弃的鼠鼠，同时设置 adoption_proposal
-
-新鼠鼠属性参考:
-  breed: golden / dwarf / milk_tea / pudding / silver_fox / purple / cream / sapphire
-  personality: 贪吃 / 胆小 / 好奇 / 社牛 / 爱睡觉 / 精力旺盛 / 温顺 / 调皮（选1-2个）
-  basePower: 3-8
-  preference: 从设施类型中选择或留空
+<% if (needAdoption) { _%>
+2. 一个收养事件：门口发现被遗弃的鼠鼠，必须通过 JSONPatch 设置 adoption_proposal
+<% } _%>
 
 <% } else if (turn <= 10) { _%>
 新手期（回合<%= turn %>）。生成2个事件：
 - 以日常和机遇为主
-- 鼠鼠少于3只（当前<%= hamsterCount %>只）时，至少一个收养机会
+<% if (needAdoption) { _%>
+- 【收养指令】本回合必须包含一个收养事件，通过 JSONPatch 设置 adoption_proposal
+<% } _%>
 - 关联已有角色，展现鲜活互动
 
 <% } else if (turn <= 30) { _%>
 发展期（回合<%= turn %>）。生成2-3个事件：
 - 类型多样化，可出现挑战类
 - 展现鼠鼠关系、天使管理风格
-- 偶尔提供收养机会
+<% if (needAdoption) { _%>
+- 【收养指令】本回合必须包含一个收养事件
+<% } _%>
 - 回调之前发生的事件
 
 <% } else { _%>
 成熟期（回合<%= turn %>）。生成2-3个事件：
 - 各类型均可，含特殊事件（天使剧情线、隐藏内容）
 - 多角色联动，深度更高
-- 可出现里程碑事件
+<% if (needAdoption) { _%>
+- 【收养指令】本回合包含一个收养事件
+<% } _%>
 
 <% } _%>
 
+<% if (needAdoption) { _%>
+收养鼠鼠属性参考:
+  breed: golden / dwarf / milk_tea / pudding / silver_fox / purple / cream / sapphire
+  personality: 贪吃 / 胆小 / 好奇 / 社牛 / 爱睡觉 / 精力旺盛 / 温顺 / 调皮（选1-2个）
+  basePower: 3-8
+  preference: 从设施类型中选择或留空
+
+<% } _%>
 事件约束:
 - 每事件 2-3 选项，标注 energy_delta / stardust_delta / mood_delta
 - 至少一个稳妥正收益选项；恶搞选项 is_silly: true，扣除极小
@@ -46,7 +70,7 @@
 <% if (stardust > 0) { _%>
 - 星尘负值上限: <%= Math.round(stardust * 0.1) %>
 <% } _%>
-- 角色ID: 鼠鼠用变量中的ID，天使用 mianhua / luosi / xingxing / paofu
+- 角色ID: 鼠鼠用变量中的ID（hamster_1 等），天使用 mianhua / luosi / xingxing / paofu
 - 涉及角色须写入 memory
 
 </event_instruction>

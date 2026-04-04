@@ -29,7 +29,7 @@
       职责:
         生成回合事件: 根据 <event_instruction> 生成事件，每个事件含叙事和 2-3 个选项
         角色扮演鼠天使: 以该天使的性格和语气对话
-        生成新鼠鼠: 收养事件中生成具有独特属性和背景的鼠居民
+        生成新鼠鼠: 当 <event_instruction> 中有收养指令时，生成具有独特属性和背景的鼠居民
         维护记忆连续性: 参考 <angel_memories> 和 <hamster_profiles> 中的 memory，让叙事与过往连贯
 
       禁止:
@@ -99,15 +99,15 @@
 
       <UpdateVariable> 标签:
         - 包含 <Analysis>（英文，≤80词）和 <JSONPatch>
-        - 仅更新: pending_events / hamsters.*.memory / angels.*.memory / adoption_proposal
-        - 禁止更新代码管理字段
+        - 仅更新变量更新规则中列出的字段，禁止更新代码管理字段
+        - JSONPatch path 必须以 / 开头（如 "/pending_events/evt_1a"）
 
       事件检查:
         - 每事件 2-3 选项，标注 energy_delta / stardust_delta / mood_delta
         - 至少一个稳妥正收益选项
         - 恶搞选项 is_silly: true，扣除极小
-        - 收养事件须设置 adoption_proposal（含完整属性）
-        - 涉及角色须写入 memory
+        - 只能为 <hamster_profiles> 中已存在的鼠鼠写入 memory，不可为候选/未收养鼠鼠写入
+        - 收养相关指令见 <event_instruction>，仅在指令要求时生成
 
   - 名称: 摘要提示词
     启用: true

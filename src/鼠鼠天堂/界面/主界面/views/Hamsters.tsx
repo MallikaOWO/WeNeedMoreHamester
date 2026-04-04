@@ -1,4 +1,4 @@
-// 3.3.4 鼠鼠页 — 鼠鼠卡片 + 居住/工作分配 + 详情
+// 3.3.4 鼠鼠页 — 鼠鼠卡片 + 居住/玩耍分配 + 详情
 
 import React, { useState } from 'react';
 import { useStore } from '../store';
@@ -39,7 +39,7 @@ const Hamsters: React.FC = () => {
     );
   }
 
-  // 有空位的工作设施（play 类）
+  // 有空位的玩耍设施（play 类）
   const availableWorkFacilities = Object.entries(game.facilities)
     .filter(([, f]) => {
       const def = getFacilityDef(f.type);
@@ -88,7 +88,7 @@ const Hamsters: React.FC = () => {
             {/* 状态行 */}
             <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
               性格: {h.personality} | 住所: {livingName}
-              {workName ? ` | 工作: ${workName}` : ' | 休息中'}
+              {workName ? ` | 玩耍: ${workName}` : ' | 休息中'}
             </div>
 
             {/* 展开详情 */}
@@ -99,7 +99,7 @@ const Hamsters: React.FC = () => {
                 <div style={{ fontSize: 12, marginBottom: 8 }}>基础产能: ⚡{h.basePower}</div>
 
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {/* 工作相关 */}
+                  {/* 玩耍相关 */}
                   {h.workingAt ? (
                     <button
                       className="btn btn-sm"
@@ -113,7 +113,7 @@ const Hamsters: React.FC = () => {
                       onClick={() => setAssignMode(isAssigning && assignMode?.type === 'work' ? null : { hamsterId: hId, type: 'work' })}
                       disabled={availableWorkFacilities.length === 0}
                     >
-                      {isAssigning && assignMode?.type === 'work' ? '取消' : '去工作'}
+                      {isAssigning && assignMode?.type === 'work' ? '取消' : '去玩耍'}
                     </button>
                   )}
                   {/* 换住所 */}
@@ -136,7 +136,7 @@ const Hamsters: React.FC = () => {
                 {/* 设施选择列表 */}
                 {isAssigning && assignMode?.type === 'work' && (
                   <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    <div style={{ fontSize: 11, color: '#6b7280' }}>选择工作设施:</div>
+                    <div style={{ fontSize: 11, color: '#6b7280' }}>选择玩耍设施:</div>
                     {availableWorkFacilities.map(([fId, f]) => {
                       const def = getFacilityDef(f.type);
                       return (

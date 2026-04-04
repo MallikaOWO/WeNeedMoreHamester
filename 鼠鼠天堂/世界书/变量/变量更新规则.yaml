@@ -1,3 +1,18 @@
+<% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); _%>
+<% var hamsterCount = Object.keys(hamsters).length; _%>
+<% var turn = getvar('stat_data.turn', {defaults: 0}); _%>
+<% var proposal = getvar('stat_data.adoption_proposal', {defaults: null}); _%>
+<%
+  var needAdoption = false;
+  if (!proposal) {
+    var roll = (turn * 13 + 7) % 10;
+    if (hamsterCount === 0) { needAdoption = true; }
+    else if (hamsterCount <= 2) { needAdoption = roll < 7; }
+    else if (hamsterCount <= 4) { needAdoption = roll < 4; }
+    else if (hamsterCount <= 6) { needAdoption = roll < 2; }
+    else { needAdoption = roll < 1; }
+  }
+_%>
 ---
 变量更新规则:
   pending_events:
@@ -8,14 +23,13 @@
       - 至少一个稳妥正收益选项；恶搞选项 is_silly: true
       - energy_delta 负值不超过当前能源 30%
       - stardust_delta 通常为 0，仅机遇/特殊事件涉及
-      - mood_target 填具体角色ID（如 hamster_puding），省略则影响全局
+      - mood_target 填具体角色ID（如 hamster_1），省略则影响全局
       - related_characters 填关联角色ID，逗号分隔
 
   hamsters.${鼠鼠ID}.memory:
     格式: "{ [记忆ID]: string }"
     check:
-      - 鼠鼠ID格式为 hamster_1, hamster_2, ...（由代码生成，参考变量中的实际ID）
-      - 仅为本回合涉及的鼠鼠写入
+      - 只能为 <hamster_profiles> 中已存在的鼠鼠写入记忆，不可为候选/未收养的鼠鼠写入
       - 记忆ID格式 t{回合号}_{关键词}，如 t6_sneeze
       - 重要记忆 ID 以 ! 开头，如 !t3_adopted
       - 一句话概括本回合该角色发生的事
@@ -25,18 +39,23 @@
     check:
       - 仅为本回合涉及的天使写入
       - 格式同鼠鼠记忆
+<% if (needAdoption) { %>
 
   adoption_proposal:
-    格式: "{ name, breed, personality, basePower, preference, story } | null"
+    格式: "{ name, breed, personality, basePower, preference, story }"
     check:
-      - 仅收养事件中设置，其他情况不更新
+      - 本回合需要生成收养提案
       - breed 使用品种ID（golden, dwarf, milk_tea, pudding, silver_fox, purple, cream, sapphire）
       - personality 填 1-2 个性格标签，逗号分隔
       - basePower 范围 3-8
       - story 1-2 句收养背景
+<% } %>
 
   _禁止更新:
     - energy / energyCap / stardust / happiness / turn — 代码结算
     - hamsters.*.mood / stamina / livingAt / workingAt — 代码管理
     - angels.*.level / exp / skills / assignedFacility — 代码管理
     - facilities / achievements — 代码管理
+<% if (!needAdoption) { _%>
+    - adoption_proposal — 本回合不生成收养提案
+<% } _%>

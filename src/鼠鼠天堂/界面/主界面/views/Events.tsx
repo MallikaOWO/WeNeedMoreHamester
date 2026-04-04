@@ -14,7 +14,8 @@ const Events: React.FC = () => {
   const { state, dispatch } = useStore();
   const eventEntries = Object.entries(state.game.pending_events);
   const proposal = state.game.adoption_proposal;
-  const hasContent = eventEntries.length > 0 || proposal;
+  const showProposal = proposal && !state.proposalDismissed;
+  const hasContent = eventEntries.length > 0 || showProposal;
 
   if (!hasContent) {
     return (
@@ -30,7 +31,7 @@ const Events: React.FC = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* 收养提案 */}
-      {proposal && (
+      {showProposal && (
         <div className="card" style={{ borderColor: '#f472b6', background: '#fdf2f8' }}>
           <div style={{ fontWeight: 600, marginBottom: 6, color: '#be185d' }}>有一只鼠鼠在乐园门口等待收养!</div>
           <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>
@@ -39,11 +40,10 @@ const Events: React.FC = () => {
             <div>基础产能: ⚡{proposal.basePower}{proposal.preference ? ` | 偏好: ${proposal.preference}` : ''}</div>
             {proposal.story && <div style={{ marginTop: 4, color: '#6b7280', fontStyle: 'italic' }}>{proposal.story}</div>}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button
               className="btn btn-primary"
               onClick={() => {
-                // 生成简洁可预测的 ID：hamster_1, hamster_2, ...
                 const existingCount = Object.keys(state.game.hamsters).length;
                 const id = `hamster_${existingCount + 1}`;
                 dispatch({
@@ -67,6 +67,13 @@ const Events: React.FC = () => {
               onClick={() => dispatch({ type: 'DISMISS_PROPOSAL' })}
             >
               下次再说
+            </button>
+            <button
+              className="btn btn-sm"
+              style={{ color: '#9ca3af', marginLeft: 'auto' }}
+              onClick={() => dispatch({ type: 'REJECT_PROPOSAL' })}
+            >
+              不想要了
             </button>
           </div>
         </div>

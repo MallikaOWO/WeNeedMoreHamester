@@ -48,7 +48,7 @@ const Facilities: React.FC = () => {
                     <span>
                       {def?.category === 'living'
                         ? `住户: ${Object.values(game.hamsters).filter(h => h.livingAt === fId).length}/${f.capacity}`
-                        : `工位: ${occupantCount}/${f.capacity}`
+                        : `玩耍中: ${occupantCount}/${f.capacity}`
                       } |{' '}
                     </span>
                   )}
@@ -56,7 +56,7 @@ const Facilities: React.FC = () => {
                   {def?.specialEffect && <span> | {def.specialEffect}</span>}
                 </div>
 
-                {/* 居民/工人列表 */}
+                {/* 居民/玩耍鼠鼠列表 */}
                 {def?.category === 'living' ? (() => {
                   const residents = Object.entries(game.hamsters).filter(([, h]) => h.livingAt === fId);
                   return residents.length > 0 ? (
@@ -66,7 +66,7 @@ const Facilities: React.FC = () => {
                   ) : null;
                 })() : occupantCount > 0 && (
                   <div style={{ fontSize: 12, marginTop: 4 }}>
-                    工人: {Object.keys(f.occupants).map(id => game.hamsters[id]?.name ?? id).join('、')}
+                    玩耍中: {Object.keys(f.occupants).map(id => game.hamsters[id]?.name ?? id).join('、')}
                   </div>
                 )}
 

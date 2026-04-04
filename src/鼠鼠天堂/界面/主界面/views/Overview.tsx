@@ -1,8 +1,9 @@
-// 3.3.1 总览页 — 资源栏 + 回合信息 + 叙事面板 + 推进回合
+// 3.3.1 总览页 — 资源栏 + 回合信息 + 叙事面板 + 产能明细 + 推进回合
 
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { FACILITY_DEFS } from '../../../data/facilities';
+import { getFacilityDef } from '../../../data/facilities';
+import { calcMoodMultiplier } from '../../../engine/turn';
 
 /** 资源进度条 */
 const ResourceBar: React.FC<{
@@ -28,28 +29,54 @@ const ResourceBar: React.FC<{
   </div>
 );
 
-/** 计算本回合预估产能（仅 play 类设施） */
-function estimateProduction(game: ReturnType<typeof useStore>['state']['game']): number {
-  let total = 0;
-  for (const f of Object.values(game.facilities)) {
-    const def = FACILITY_DEFS.find(d => d.type === f.type);
+interface FacilityBreakdown {
+  name: string;
+  hamsterDetails: { name: string; base: number; facilityBase: number; levelMult: number }[];
+  subtotal: number;
+}
+
+/** 计算产能明细 */
+function calcProductionBreakdown(game: ReturnType<typeof useStore>['state']['game']): {
+  facilities: FacilityBreakdown[];
+  rawTotal: number;
+  moodMult: number;
+  finalTotal: number;
+} {
+  const facilities: FacilityBreakdown[] = [];
+  let rawTotal = 0;
+
+  for (const [, f] of Object.entries(game.facilities)) {
+    const def = getFacilityDef(f.type);
     if (!def || def.category !== 'play' || def.basePower <= 0) continue;
     if (!f.managedBy) continue;
-    const occupantCount = Object.keys(f.occupants).length; // 工作中的鼠鼠
-    if (occupantCount === 0) continue;
     const levelMult = 1 + (f.level - 1) * 0.3;
-    total += Math.round(def.basePower * occupantCount * levelMult);
+    const hamsterDetails: FacilityBreakdown['hamsterDetails'] = [];
+    let subtotal = 0;
+
+    for (const hId of Object.keys(f.occupants)) {
+      const h = game.hamsters[hId];
+      if (!h) continue;
+      const raw = (def.basePower + h.basePower) * levelMult;
+      subtotal += raw;
+      hamsterDetails.push({ name: h.name, base: h.basePower, facilityBase: def.basePower, levelMult });
+    }
+
+    if (hamsterDetails.length > 0) {
+      rawTotal += subtotal;
+      facilities.push({ name: def.name, hamsterDetails, subtotal: Math.round(subtotal) });
+    }
   }
-  // 心情乘数
-  const moodMult = 0.5 + (game.happiness / 100) * 0.5;
-  return Math.round(total * moodMult);
+
+  const moodMult = calcMoodMultiplier(game.happiness);
+  return { facilities, rawTotal, moodMult, finalTotal: Math.round(rawTotal * moodMult) };
 }
 
 const Overview: React.FC = () => {
   const { state, advanceTurnAndGenerate } = useStore();
   const [showDebug, setShowDebug] = useState(false);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const game = state.game;
-  const estimated = estimateProduction(game);
+  const production = calcProductionBreakdown(game);
   const pendingCount = Object.keys(game.pending_events).length;
   const hamsterCount = Object.keys(game.hamsters).length;
   const facilityCount = Object.keys(game.facilities).length;
@@ -81,13 +108,47 @@ const Overview: React.FC = () => {
         <ResourceBar icon="💛" label="心情" value={game.happiness} max={100} color="var(--color-happiness)" />
       </div>
 
-      {/* 产能预览 */}
+      {/* 产能预估 + 明细 */}
       <div className="card" style={{ marginBottom: 12 }}>
-        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>下回合预估</div>
-        <div style={{ display: 'flex', gap: 16 }}>
-          <span>⚡ +{estimated}</span>
-          {Object.values(game.facilities).some(f => f.type === 'stardust_altar') && <span>✨ +2</span>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <span style={{ fontSize: 12, color: '#6b7280' }}>下回合预估 </span>
+            <span style={{ fontWeight: 600 }}>⚡ +{production.finalTotal}</span>
+            {Object.values(game.facilities).some(f => f.type === 'stardust_altar' && f.managedBy) && (
+              <span style={{ marginLeft: 8, fontWeight: 600 }}>✨ +2</span>
+            )}
+          </div>
+          {production.facilities.length > 0 && (
+            <button
+              className="btn btn-sm"
+              style={{ fontSize: 11, color: '#9ca3af' }}
+              onClick={() => setShowBreakdown(!showBreakdown)}
+            >
+              {showBreakdown ? '收起' : '明细'}
+            </button>
+          )}
         </div>
+
+        {showBreakdown && (
+          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb', fontSize: 12 }}>
+            {production.facilities.map((fb, i) => (
+              <div key={i} style={{ marginBottom: 6 }}>
+                <div style={{ color: '#374151', fontWeight: 500 }}>{fb.name}</div>
+                {fb.hamsterDetails.map((hd, j) => (
+                  <div key={j} style={{ color: '#6b7280', paddingLeft: 8 }}>
+                    {hd.name}: (设施{hd.facilityBase} + 鼠鼠{hd.base}) × Lv.倍率{hd.levelMult.toFixed(1)} = ⚡{Math.round((hd.facilityBase + hd.base) * hd.levelMult)}
+                  </div>
+                ))}
+                <div style={{ color: '#374151', paddingLeft: 8 }}>小计: ⚡{fb.subtotal}</div>
+              </div>
+            ))}
+            <div style={{ borderTop: '1px dashed #e5e7eb', paddingTop: 4, marginTop: 4 }}>
+              <div style={{ color: '#6b7280' }}>
+                基础合计: ⚡{Math.round(production.rawTotal)} × 心情加成{(production.moodMult * 100).toFixed(0)}% = <b>⚡{production.finalTotal}</b>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 待处理事件提示 */}

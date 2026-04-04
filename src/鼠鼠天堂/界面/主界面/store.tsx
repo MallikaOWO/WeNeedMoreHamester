@@ -35,6 +35,8 @@ export interface AppState {
   narrative: string;
   /** AI 原始输出（调试用） */
   rawAiOutput: string;
+  /** 本回合已点过"下次再说"，UI 层隐藏收养提案（下回合重置） */
+  proposalDismissed: boolean;
 }
 
 // ── Actions ──
@@ -54,6 +56,7 @@ export type Action =
   | { type: 'CHOOSE_EVENT'; eventId: string; optionKey: string }
   | { type: 'ADVANCE_TURN' }
   | { type: 'DISMISS_PROPOSAL' }
+  | { type: 'REJECT_PROPOSAL' }
   | { type: 'SET_GENERATING'; generating: boolean }
   | { type: 'SET_AI_OUTPUT'; narrative: string; rawOutput: string }
   | { type: 'RELOAD' };
@@ -109,7 +112,12 @@ function reducer(state: AppState, action: Action): AppState {
     }
 
     case 'DISMISS_PROPOSAL':
-      return { ...state, game: { ...state.game, adoption_proposal: null } };
+      // "下次再说"：仅隐藏 UI，候选鼠鼠保留到下回合
+      return { ...state, proposalDismissed: true };
+
+    case 'REJECT_PROPOSAL':
+      // "不想要了"：真正清除候选鼠鼠
+      return { ...state, game: { ...state.game, adoption_proposal: null }, proposalDismissed: false };
 
     case 'ASSIGN_WORK': {
       const result = assignToWork(state.game, action.hamsterId, action.facilityId);
@@ -181,7 +189,7 @@ function reducer(state: AppState, action: Action): AppState {
         log.push({ turn: game.turn, text: `解锁成就: ${ach.name} (+${ach.reward}星尘)`, type: 'achievement' });
       }
 
-      return { ...state, game, log };
+      return { ...state, game, log, proposalDismissed: false };
     }
 
     case 'SET_GENERATING':
@@ -252,6 +260,7 @@ const initialAppState: AppState = {
   generating: false,
   narrative: '',
   rawAiOutput: '',
+  proposalDismissed: false,
 };
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -326,13 +335,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const parsedData = await Mvu.parseMessage(aiText, _.cloneDeep(baseMvuData));
     const finalData = parsedData ?? baseMvuData;
 
-    // 保护代码管理的字段（livingAt/workingAt），防止 AI 覆盖
-    const baseHamsters = _.get(baseMvuData, 'stat_data.hamsters') as Record<string, any> | undefined;
-    if (baseHamsters && parsedData) {
-      for (const [id, baseH] of Object.entries(baseHamsters)) {
-        if (_.has(finalData, `stat_data.hamsters.${id}`)) {
-          _.set(finalData, `stat_data.hamsters.${id}.livingAt`, baseH.livingAt ?? null);
-          _.set(finalData, `stat_data.hamsters.${id}.workingAt`, baseH.workingAt ?? null);
+    // 保护代码管理的字段，防止 AI 覆盖
+    if (parsedData) {
+      const baseHamsters = _.get(baseMvuData, 'stat_data.hamsters') as Record<string, any> | undefined ?? {};
+      const finalHamsters = _.get(finalData, 'stat_data.hamsters') as Record<string, any> | undefined;
+
+      if (finalHamsters) {
+        for (const id of Object.keys(finalHamsters)) {
+          if (baseHamsters[id]) {
+            // 已存在的鼠鼠：保护 livingAt/workingAt
+            _.set(finalData, `stat_data.hamsters.${id}.livingAt`, baseHamsters[id].livingAt ?? null);
+            _.set(finalData, `stat_data.hamsters.${id}.workingAt`, baseHamsters[id].workingAt ?? null);
+          } else {
+            // AI 不能创建新鼠鼠（只有前端收养才能创建），删除
+            delete finalHamsters[id];
+          }
         }
       }
     }

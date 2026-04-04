@@ -4,23 +4,34 @@ import type { GameState, Facility, Hamster } from '../schema';
 import { getFacilityDef } from '../data/facilities';
 import { getPersonalityDef } from '../data/personalities';
 
-/** 计算单个工作设施本回合产能 */
+/**
+ * 心情乘数：happiness 70 ≈ 1.0x（基准），100 = 1.2x，0 = 0.5x
+ * 公式：0.5 + happiness/100 × 0.7
+ */
+export function calcMoodMultiplier(happiness: number): number {
+  return 0.5 + (happiness / 100) * 0.7;
+}
+
+/**
+ * 计算单个工作设施本回合产能
+ * 每只工人产出 = (设施basePower + 鼠鼠basePower) × 等级倍率 × 偏好加成
+ * 总产出 = 各工人产出之和 × 心情乘数
+ */
 function calcFacilityOutput(facility: Facility, hamsters: Record<string, Hamster>, happiness: number): number {
   const def = getFacilityDef(facility.type);
   if (!def || def.basePower <= 0) return 0;
 
-  // 等级加成：每级 +30%
   const levelMult = 1 + (facility.level - 1) * 0.3;
-
-  // 遍历设施中的工人，计算每只的产出
-  let total = 0;
   const occupantIds = Object.keys(facility.occupants);
+
+  let total = 0;
   for (const hId of occupantIds) {
     const h = hamsters[hId];
     if (!h) continue;
 
-    let power = h.basePower;
-    // 偏好加成：鼠鼠性格匹配设施偏好性格 → +50%
+    let power = def.basePower + h.basePower;
+
+    // 偏好加成：鼠鼠性格匹配设施 → +50%
     if (def.preferredPersonality) {
       const personalities = h.personality.split(',').map(p => p.trim());
       if (personalities.some(p => {
@@ -30,16 +41,11 @@ function calcFacilityOutput(facility: Facility, hamsters: Record<string, Hamster
         power *= 1.5;
       }
     }
-    total += power;
+
+    total += power * levelMult;
   }
 
-  // 设施基础产能 × 等级倍率
-  total += def.basePower * occupantIds.length * levelMult;
-
-  // 心情乘数：happiness 70 = ×1.0，100 = ×1.3，0 = ×0.3
-  const moodMult = 0.3 + (happiness / 100) * 0.7 + Math.max(0, happiness - 70) / 100 * 0.3;
-  total *= moodMult;
-
+  total *= calcMoodMultiplier(happiness);
   return Math.round(total);
 }
 

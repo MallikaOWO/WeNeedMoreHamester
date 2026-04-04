@@ -12,12 +12,17 @@ $(() => {
     if (!statData) return;
 
     // ── 保护代码管理的字段，防止 AI 覆盖 ──
-    // livingAt/workingAt 由前端代码管理，AI 不应该修改
     const oldHamsters = (old_variables?.stat_data?.hamsters ?? {}) as Record<string, any>;
-    for (const [id, oldH] of Object.entries(oldHamsters)) {
-      if (_.has(statData, `hamsters.${id}`)) {
-        _.set(variables, `stat_data.hamsters.${id}.livingAt`, oldH.livingAt ?? null);
-        _.set(variables, `stat_data.hamsters.${id}.workingAt`, oldH.workingAt ?? null);
+    const newHamsters = (statData.hamsters ?? {}) as Record<string, any>;
+    for (const id of Object.keys(newHamsters)) {
+      if (oldHamsters[id]) {
+        // 已存在的鼠鼠：保护 livingAt/workingAt
+        _.set(variables, `stat_data.hamsters.${id}.livingAt`, oldHamsters[id].livingAt ?? null);
+        _.set(variables, `stat_data.hamsters.${id}.workingAt`, oldHamsters[id].workingAt ?? null);
+      } else {
+        // AI 不能创建新鼠鼠（只有前端收养才能创建），删除
+        delete newHamsters[id];
+        _.set(variables, 'stat_data.hamsters', newHamsters);
       }
     }
 
