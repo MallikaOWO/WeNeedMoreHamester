@@ -75,10 +75,17 @@ export function applyEventChoice(
   // 从待处理事件中移除
   const { [eventId]: _, ...pending_events } = state.pending_events;
 
+  // 重新计算全局心情值（所有鼠鼠 mood 的平均值）
+  const hamsterValues = Object.values(hamsters);
+  const happiness = hamsterValues.length > 0
+    ? Math.round(hamsterValues.reduce((sum, h) => sum + h.mood, 0) / hamsterValues.length)
+    : state.happiness;
+
   return {
     ...state,
     energy,
     stardust,
+    happiness,
     hamsters,
     pending_events,
   };

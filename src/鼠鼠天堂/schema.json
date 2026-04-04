@@ -56,7 +56,17 @@
             "default": 100,
             "type": "number"
           },
-          "assignedTo": {
+          "livingAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "workingAt": {
             "anyOf": [
               {
                 "type": "string"

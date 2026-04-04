@@ -28,14 +28,14 @@ const ResourceBar: React.FC<{
   </div>
 );
 
-/** 计算本回合预估产能 */
+/** 计算本回合预估产能（仅 play 类设施） */
 function estimateProduction(game: ReturnType<typeof useStore>['state']['game']): number {
   let total = 0;
   for (const f of Object.values(game.facilities)) {
     const def = FACILITY_DEFS.find(d => d.type === f.type);
-    if (!def || def.basePower <= 0) continue;
+    if (!def || def.category !== 'play' || def.basePower <= 0) continue;
     if (!f.managedBy) continue;
-    const occupantCount = Object.keys(f.occupants).length;
+    const occupantCount = Object.keys(f.occupants).length; // 工作中的鼠鼠
     if (occupantCount === 0) continue;
     const levelMult = 1 + (f.level - 1) * 0.3;
     total += Math.round(def.basePower * occupantCount * levelMult);

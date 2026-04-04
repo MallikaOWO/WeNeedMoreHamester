@@ -44,15 +44,29 @@ const Facilities: React.FC = () => {
                 </div>
 
                 <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                  {f.capacity > 0 && <span>容量: {occupantCount}/{f.capacity} | </span>}
+                  {f.capacity > 0 && (
+                    <span>
+                      {def?.category === 'living'
+                        ? `住户: ${Object.values(game.hamsters).filter(h => h.livingAt === fId).length}/${f.capacity}`
+                        : `工位: ${occupantCount}/${f.capacity}`
+                      } |{' '}
+                    </span>
+                  )}
                   管理: {manager}
                   {def?.specialEffect && <span> | {def.specialEffect}</span>}
                 </div>
 
-                {/* 居民列表 */}
-                {occupantCount > 0 && (
+                {/* 居民/工人列表 */}
+                {def?.category === 'living' ? (() => {
+                  const residents = Object.entries(game.hamsters).filter(([, h]) => h.livingAt === fId);
+                  return residents.length > 0 ? (
+                    <div style={{ fontSize: 12, marginTop: 4 }}>
+                      住户: {residents.map(([, h]) => h.name).join('、')}
+                    </div>
+                  ) : null;
+                })() : occupantCount > 0 && (
                   <div style={{ fontSize: 12, marginTop: 4 }}>
-                    居民: {Object.keys(f.occupants).map(id => game.hamsters[id]?.name ?? id).join('、')}
+                    工人: {Object.keys(f.occupants).map(id => game.hamsters[id]?.name ?? id).join('、')}
                   </div>
                 )}
 

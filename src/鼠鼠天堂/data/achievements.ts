@@ -1,6 +1,7 @@
 // 成就定义
 
 import type { GameState } from '../schema';
+import { getFacilityDef } from './facilities';
 
 export interface AchievementDef {
   id: string;
@@ -71,8 +72,17 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     description: '所有设施都满员运行',
     reward: 15,
     check: (s) => {
-      const facilities = Object.values(s.facilities);
-      return facilities.length > 0 && facilities.every(f => f.capacity > 0 ? Object.keys(f.occupants).length >= f.capacity : true);
+      const facilityEntries = Object.entries(s.facilities);
+      return facilityEntries.length > 0 && facilityEntries.every(([fId, f]) => {
+        if (f.capacity <= 0) return true;
+        const def = getFacilityDef(f.type);
+        if (def?.category === 'living') {
+          // living 设施看 hamsters.livingAt
+          return Object.values(s.hamsters).filter(h => h.livingAt === fId).length >= f.capacity;
+        }
+        // play 设施看 occupants
+        return Object.keys(f.occupants).length >= f.capacity;
+      });
     },
   },
 ];

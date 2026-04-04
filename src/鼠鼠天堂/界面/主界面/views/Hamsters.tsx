@@ -1,8 +1,8 @@
-// 3.3.4 鼠鼠页 — 鼠鼠卡片 + 分配 + 详情
+// 3.3.4 鼠鼠页 — 鼠鼠卡片 + 居住/工作分配 + 详情
 
 import React, { useState } from 'react';
 import { useStore } from '../store';
-import { getFacilityDef } from '../../../data/facilities';
+import { getFacilityDef, FACILITY_DEFS } from '../../../data/facilities';
 
 const MoodBar: React.FC<{ value: number }> = ({ value }) => (
   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -26,7 +26,7 @@ const Hamsters: React.FC = () => {
   const { state, dispatch, interactWithCharacter } = useStore();
   const game = state.game;
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [assigningId, setAssigningId] = useState<string | null>(null);
+  const [assignMode, setAssignMode] = useState<{ hamsterId: string; type: 'work' | 'living' } | null>(null);
 
   const hamsterEntries = Object.entries(game.hamsters);
 
@@ -39,25 +39,41 @@ const Hamsters: React.FC = () => {
     );
   }
 
-  // 可分配的设施（有容量且未满）
-  const availableFacilities = Object.entries(game.facilities)
-    .filter(([, f]) => f.capacity > 0 && Object.keys(f.occupants).length < f.capacity);
+  // 有空位的工作设施（play 类）
+  const availableWorkFacilities = Object.entries(game.facilities)
+    .filter(([, f]) => {
+      const def = getFacilityDef(f.type);
+      return def?.category === 'play' && f.capacity > 0 && Object.keys(f.occupants).length < f.capacity;
+    });
+
+  // 有空位的居住设施（living 类）
+  const getAvailableLivingFacilities = (excludeHamsterId: string) =>
+    Object.entries(game.facilities).filter(([fId, f]) => {
+      const def = getFacilityDef(f.type);
+      if (def?.category !== 'living') return false;
+      const residents = Object.values(game.hamsters).filter(h => h.livingAt === fId).length;
+      // 如果当前鼠鼠已住这里，不算占位
+      const selfHere = game.hamsters[excludeHamsterId]?.livingAt === fId ? 1 : 0;
+      return (residents - selfHere) < f.capacity;
+    });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {hamsterEntries.map(([hId, h]) => {
         const expanded = expandedId === hId;
-        const assigning = assigningId === hId;
-        const location = h.assignedTo
-          ? getFacilityDef(game.facilities[h.assignedTo]?.type ?? '')?.name ?? '工作中'
-          : '休息中';
+        const isAssigning = assignMode?.hamsterId === hId;
+
+        const livingFacility = h.livingAt ? game.facilities[h.livingAt] : null;
+        const livingName = livingFacility ? (getFacilityDef(livingFacility.type)?.name ?? '未知') : '无住所';
+        const workFacility = h.workingAt ? game.facilities[h.workingAt] : null;
+        const workName = workFacility ? (getFacilityDef(workFacility.type)?.name ?? '未知') : null;
 
         return (
           <div key={hId} className="card">
             {/* 头部 */}
             <div
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-              onClick={() => setExpandedId(expanded ? null : hId)}
+              onClick={() => { setExpandedId(expanded ? null : hId); setAssignMode(null); }}
             >
               <div>
                 <span style={{ fontWeight: 600 }}>{h.name}</span>
@@ -71,7 +87,8 @@ const Hamsters: React.FC = () => {
 
             {/* 状态行 */}
             <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-              性格: {h.personality} | 位置: {location}
+              性格: {h.personality} | 住所: {livingName}
+              {workName ? ` | 工作: ${workName}` : ' | 休息中'}
             </div>
 
             {/* 展开详情 */}
@@ -82,23 +99,30 @@ const Hamsters: React.FC = () => {
                 <div style={{ fontSize: 12, marginBottom: 8 }}>基础产能: ⚡{h.basePower}</div>
 
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {/* 分配/取消分配 */}
-                  {h.assignedTo ? (
+                  {/* 工作相关 */}
+                  {h.workingAt ? (
                     <button
                       className="btn btn-sm"
-                      onClick={() => dispatch({ type: 'UNASSIGN_HAMSTER', hamsterId: hId })}
+                      onClick={() => dispatch({ type: 'STOP_WORKING', hamsterId: hId })}
                     >
                       回窝休息
                     </button>
                   ) : (
                     <button
                       className="btn btn-sm"
-                      onClick={() => setAssigningId(assigning ? null : hId)}
-                      disabled={availableFacilities.length === 0}
+                      onClick={() => setAssignMode(isAssigning && assignMode?.type === 'work' ? null : { hamsterId: hId, type: 'work' })}
+                      disabled={availableWorkFacilities.length === 0}
                     >
-                      {assigning ? '取消' : '分配到设施'}
+                      {isAssigning && assignMode?.type === 'work' ? '取消' : '去工作'}
                     </button>
                   )}
+                  {/* 换住所 */}
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => setAssignMode(isAssigning && assignMode?.type === 'living' ? null : { hamsterId: hId, type: 'living' })}
+                  >
+                    {isAssigning && assignMode?.type === 'living' ? '取消' : '换住所'}
+                  </button>
                   {/* 互动 */}
                   <button
                     className="btn btn-sm"
@@ -109,10 +133,11 @@ const Hamsters: React.FC = () => {
                   </button>
                 </div>
 
-                {/* 设施选择 */}
-                {assigning && (
+                {/* 设施选择列表 */}
+                {isAssigning && assignMode?.type === 'work' && (
                   <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {availableFacilities.map(([fId, f]) => {
+                    <div style={{ fontSize: 11, color: '#6b7280' }}>选择工作设施:</div>
+                    {availableWorkFacilities.map(([fId, f]) => {
                       const def = getFacilityDef(f.type);
                       return (
                         <button
@@ -120,11 +145,37 @@ const Hamsters: React.FC = () => {
                           className="btn btn-sm"
                           style={{ textAlign: 'left' }}
                           onClick={() => {
-                            dispatch({ type: 'ASSIGN_HAMSTER', hamsterId: hId, facilityId: fId });
-                            setAssigningId(null);
+                            dispatch({ type: 'ASSIGN_WORK', hamsterId: hId, facilityId: fId });
+                            setAssignMode(null);
                           }}
                         >
                           {def?.name ?? f.type} ({Object.keys(f.occupants).length}/{f.capacity})
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {isAssigning && assignMode?.type === 'living' && (
+                  <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ fontSize: 11, color: '#6b7280' }}>选择住所:</div>
+                    {getAvailableLivingFacilities(hId).map(([fId, f]) => {
+                      const def = getFacilityDef(f.type);
+                      const residents = Object.values(game.hamsters).filter(ham => ham.livingAt === fId).length;
+                      const isCurrent = h.livingAt === fId;
+                      return (
+                        <button
+                          key={fId}
+                          className="btn btn-sm"
+                          style={{ textAlign: 'left' }}
+                          disabled={isCurrent}
+                          onClick={() => {
+                            dispatch({ type: 'CHANGE_LIVING', hamsterId: hId, facilityId: fId });
+                            setAssignMode(null);
+                          }}
+                        >
+                          {def?.name ?? f.type} ({residents}/{f.capacity})
+                          {isCurrent && ' (当前)'}
                         </button>
                       );
                     })}

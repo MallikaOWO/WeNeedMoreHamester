@@ -8,7 +8,7 @@ import { createInitialGameState } from '../../data/init';
 
 // engine imports
 import { buildFacility, upgradeFacility, assignAngelToFacility } from '../../engine/facility';
-import { adoptHamster, assignHamster, unassignHamster } from '../../engine/hamster';
+import { adoptHamster, assignToWork, stopWorking, changeLiving } from '../../engine/hamster';
 import { levelUpAngel, useSkill, tickCooldowns } from '../../engine/angel';
 import { applyEventChoice, rollEventSlots } from '../../engine/event';
 import { settleTurn } from '../../engine/turn';
@@ -41,9 +41,10 @@ export type Action =
   | { type: 'BUILD_FACILITY'; facilityType: string }
   | { type: 'UPGRADE_FACILITY'; facilityId: string }
   | { type: 'ASSIGN_ANGEL'; angelId: string; facilityId: string }
-  | { type: 'ADOPT_HAMSTER'; hamsterId: string; data: Omit<Hamster, 'assignedTo' | 'memory' | 'mood' | 'stamina'> }
-  | { type: 'ASSIGN_HAMSTER'; hamsterId: string; facilityId: string }
-  | { type: 'UNASSIGN_HAMSTER'; hamsterId: string }
+  | { type: 'ADOPT_HAMSTER'; hamsterId: string; data: Omit<Hamster, 'livingAt' | 'workingAt' | 'memory' | 'mood' | 'stamina'> }
+  | { type: 'ASSIGN_WORK'; hamsterId: string; facilityId: string }
+  | { type: 'STOP_WORKING'; hamsterId: string }
+  | { type: 'CHANGE_LIVING'; hamsterId: string; facilityId: string }
   | { type: 'LEVEL_UP_ANGEL'; angelId: string }
   | { type: 'USE_SKILL'; angelId: string; skillId: string; targetId?: string }
   | { type: 'CHOOSE_EVENT'; eventId: string; optionKey: string }
@@ -105,15 +106,25 @@ function reducer(state: AppState, action: Action): AppState {
     case 'DISMISS_PROPOSAL':
       return { ...state, game: { ...state.game, adoption_proposal: null } };
 
-    case 'ASSIGN_HAMSTER': {
-      const result = assignHamster(state.game, action.hamsterId, action.facilityId);
+    case 'ASSIGN_WORK': {
+      const result = assignToWork(state.game, action.hamsterId, action.facilityId);
       if (!result.success) return state;
       return { ...state, game: result.state };
     }
 
-    case 'UNASSIGN_HAMSTER': {
-      const newGame = unassignHamster(state.game, action.hamsterId);
+    case 'STOP_WORKING': {
+      const newGame = stopWorking(state.game, action.hamsterId);
       return { ...state, game: newGame };
+    }
+
+    case 'CHANGE_LIVING': {
+      const result = changeLiving(state.game, action.hamsterId, action.facilityId);
+      if (!result.success) return state;
+      return {
+        ...state,
+        game: result.state,
+        log: addLog(state, `${state.game.hamsters[action.hamsterId]?.name ?? action.hamsterId} 搬家了`, 'build'),
+      };
     }
 
     case 'LEVEL_UP_ANGEL': {

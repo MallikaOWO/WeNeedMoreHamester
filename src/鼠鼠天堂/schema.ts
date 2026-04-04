@@ -47,7 +47,10 @@ const HamsterSchema = z.object({
   // [代码] 机械属性
   mood: z.coerce.number().transform(v => _.clamp(v, 0, 100)).prefault(70),
   stamina: z.coerce.number().transform(v => _.clamp(v, 0, 100)).prefault(100),
-  assignedTo: z.string().nullable().prefault(null),
+  /** 居住设施 ID（收养后必须分配） */
+  livingAt: z.string().nullable().prefault(null),
+  /** 工作设施 ID（可选，工作时消耗体力） */
+  workingAt: z.string().nullable().prefault(null),
 
   // [AI] 个体记忆
   memory: z.record(z.string(), z.string()).prefault({}),

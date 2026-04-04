@@ -74,11 +74,15 @@ export function getStateForPrompt(state: GameState): string {
   if (hamsterEntries.length > 0) {
     lines.push(`【鼠居民】(${hamsterEntries.length}只)`);
     for (const [hId, h] of hamsterEntries) {
-      const facilityType = h.assignedTo ? state.facilities[h.assignedTo]?.type : null;
-      const facilityName = facilityType
-        ? (FACILITY_DEFS.find(d => d.type === facilityType)?.name ?? facilityType)
+      const livingType = h.livingAt ? state.facilities[h.livingAt]?.type : null;
+      const livingName = livingType
+        ? (FACILITY_DEFS.find(d => d.type === livingType)?.name ?? livingType)
+        : '无住所';
+      const workType = h.workingAt ? state.facilities[h.workingAt]?.type : null;
+      const workName = workType
+        ? (FACILITY_DEFS.find(d => d.type === workType)?.name ?? workType)
         : '休息中';
-      lines.push(`  ${h.name}[${hId}](${h.breed}) 性格:${h.personality} 心情:${h.mood} 体力:${h.stamina} 位置:${facilityName}`);
+      lines.push(`  ${h.name}[${hId}](${h.breed}) 性格:${h.personality} 心情:${h.mood} 体力:${h.stamina} 住所:${livingName} 状态:${workName}`);
     }
   } else {
     lines.push('【鼠居民】无');
@@ -106,8 +110,13 @@ export function getStateForPrompt(state: GameState): string {
       const def = FACILITY_DEFS.find(d => d.type === f.type);
       const name = def?.name ?? f.type;
       const managerName = f.managedBy ? (state.angels[f.managedBy]?.name ?? '未知') : '无人管理';
-      const occupantCount = Object.keys(f.occupants).length;
-      lines.push(`  ${name}[${fId}] Lv.${f.level} 容量:${occupantCount}/${f.capacity} 管理:${managerName}`);
+      if (def?.category === 'living') {
+        const residents = Object.values(state.hamsters).filter(h => h.livingAt === fId).length;
+        lines.push(`  ${name}[${fId}] Lv.${f.level} 住户:${residents}/${f.capacity} 管理:${managerName}`);
+      } else {
+        const occupantCount = Object.keys(f.occupants).length;
+        lines.push(`  ${name}[${fId}] Lv.${f.level} 工位:${occupantCount}/${f.capacity} 管理:${managerName}`);
+      }
     }
   } else {
     lines.push('【设施】无');
