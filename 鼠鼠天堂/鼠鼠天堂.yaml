@@ -186,7 +186,7 @@
         ```
         <body>
         <script>
-        $('body').load('https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/界面/主界面/index.html')
+        (async()=>{const p='鼠鼠天堂/界面/主界面/index.html';try{const r=await fetch('http://localhost:6622/'+p);if(!r.ok)throw 0;$('body').html(await r.text())}catch{$('body').load('https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/'+p)}})()
         </script>
         </body>
         ```
@@ -211,13 +211,15 @@
         启用: true
         类型: 脚本
         内容: |-
-          import 'https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/脚本/变量结构/index.js';
+          const p='鼠鼠天堂/脚本/变量结构/index.js';
+          try{await import('http://localhost:6622/'+p)}catch{await import('https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/'+p)}
 
       - 名称: 隐藏楼层
         id: a1b2c3d4-5678-9abc-def0-111111111111
         启用: true
         类型: 脚本
         内容: |-
-          import 'https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/脚本/隐藏楼层/index.js';
+          const p='鼠鼠天堂/脚本/隐藏楼层/index.js';
+          try{await import('http://localhost:6622/'+p)}catch{await import('https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/'+p)}
 
     变量: {}

@@ -4,6 +4,7 @@
  * Licensed under Aladdin Free Public License (AFPL)
  * Modified: removed Vue support, adapted for React, added versioned output
  */
+import http from 'node:http';
 import { FSWatcher, watch } from 'chokidar';
 import HtmlInlineScriptWebpackPlugin from 'html-inline-script-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
@@ -79,10 +80,59 @@ const config: Config = {
   entries: glob_script_files().map(parse_entry),
 };
 
+// ── 本地开发静态文件服务 ──
+const DEV_SERVE_PORT = 6622;
+let devServer: http.Server;
+function serve_dist(compiler: webpack.Compiler) {
+  if (!compiler.options.watch || devServer) return;
+
+  const distDir = path.join(import.meta.dirname, 'dist');
+  const mimeTypes: Record<string, string> = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.map': 'application/json; charset=utf-8',
+  };
+
+  devServer = http.createServer((req, res) => {
+    // CORS — 允许酒馆 iframe 跨域请求
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+
+    const urlPath = decodeURIComponent(req.url?.split('?')[0] || '/');
+    const filePath = path.join(distDir, urlPath);
+
+    // 安全：不允许目录遍历
+    if (!filePath.startsWith(distDir)) { res.writeHead(403); res.end(); return; }
+
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        res.writeHead(404);
+        res.end('Not Found');
+        return;
+      }
+      const ext = path.extname(filePath);
+      res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.writeHead(200);
+      res.end(data);
+    });
+  });
+
+  devServer.listen(DEV_SERVE_PORT, () => {
+    console.info(`\x1b[36m[dev-server]\x1b[0m dist/ 本地服务已启动: http://localhost:${DEV_SERVE_PORT}/`);
+  });
+}
+
 // ── 酒馆助手实时热重载 ──
 let io: Server;
 function watch_tavern_helper(compiler: webpack.Compiler) {
   if (compiler.options.watch) {
+    // 同时启动本地文件服务
+    serve_dist(compiler);
+
     if (!io) {
       const port = config.port ?? 6621;
       io = new Server(port, { cors: { origin: '*' } });
