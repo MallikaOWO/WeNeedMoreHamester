@@ -46,7 +46,7 @@ function estimateProduction(game: ReturnType<typeof useStore>['state']['game']):
 }
 
 const Overview: React.FC = () => {
-  const { state, dispatch } = useStore();
+  const { state, advanceTurnAndGenerate } = useStore();
   const game = state.game;
   const estimated = estimateProduction(game);
   const pendingCount = Object.keys(game.pending_events).length;
@@ -104,10 +104,10 @@ const Overview: React.FC = () => {
       <button
         className="btn btn-primary"
         style={{ width: '100%', padding: '10px 0', fontSize: 15 }}
-        onClick={() => dispatch({ type: 'ADVANCE_TURN' })}
-        disabled={pendingCount > 0}
+        onClick={() => advanceTurnAndGenerate()}
+        disabled={pendingCount > 0 || state.generating}
       >
-        {pendingCount > 0 ? '请先处理待处理事件' : '推进回合'}
+        {state.generating ? '正在生成...' : pendingCount > 0 ? '请先处理待处理事件' : '推进回合'}
       </button>
     </div>
   );

@@ -213,4 +213,11 @@
         内容: |-
           import 'https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/脚本/变量结构/index.js';
 
+      - 名称: 隐藏楼层
+        id: a1b2c3d4-5678-9abc-def0-111111111111
+        启用: true
+        类型: 脚本
+        内容: |-
+          import 'https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/脚本/隐藏楼层/index.js';
+
     变量: {}

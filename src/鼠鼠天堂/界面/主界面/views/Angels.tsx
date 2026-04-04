@@ -16,7 +16,7 @@ const DOMAIN_LABELS: Record<string, string> = {
 };
 
 const Angels: React.FC = () => {
-  const { state, dispatch } = useStore();
+  const { state, dispatch, interactWithCharacter } = useStore();
   const game = state.game;
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [skillTarget, setSkillTarget] = useState<{ angelId: string; skillId: string } | null>(null);
@@ -114,7 +114,7 @@ const Angels: React.FC = () => {
             {expanded && (
               <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
                 {/* 升级 */}
-                <div style={{ marginBottom: 8 }}>
+                <div style={{ marginBottom: 8, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button
                     className="btn btn-sm btn-primary"
                     disabled={!levelCheck.ok}
@@ -123,8 +123,15 @@ const Angels: React.FC = () => {
                   >
                     {angel.level >= 5 ? '已满级' : `升级到 Lv.${angel.level + 1}`}
                   </button>
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => interactWithCharacter(angelId)}
+                    disabled={state.generating}
+                  >
+                    {state.generating ? '互动中...' : '互动'}
+                  </button>
                   {!levelCheck.ok && levelCheck.reason && (
-                    <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 8 }}>{levelCheck.reason}</span>
+                    <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 2 }}>{levelCheck.reason}</span>
                   )}
                 </div>
 

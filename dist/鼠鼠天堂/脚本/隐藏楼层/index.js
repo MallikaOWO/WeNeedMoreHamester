@@ -1,0 +1,2 @@
+async function e(){const e=getLastMessageId();if(e<1)return;const s=_.range(e).map(e=>({message_id:e,is_hidden:!0}));s.push({message_id:e,is_hidden:!1}),await setChatMessages(s,{refresh:'none'})}$(()=>{e()}),eventOn(tavern_events.MESSAGE_RECEIVED,()=>{e()}),eventOn(tavern_events.CHAT_CHANGED,()=>{e()});
+//# sourceMappingURL=index.js.map

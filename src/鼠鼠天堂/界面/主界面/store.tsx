@@ -29,6 +29,8 @@ export interface AppState {
   tab: TabId;
   log: LogEntry[];
   loading: boolean;
+  /** AI 正在生成中 */
+  generating: boolean;
 }
 
 // ── Actions ──
@@ -45,7 +47,10 @@ export type Action =
   | { type: 'LEVEL_UP_ANGEL'; angelId: string }
   | { type: 'USE_SKILL'; angelId: string; skillId: string; targetId?: string }
   | { type: 'CHOOSE_EVENT'; eventId: string; optionKey: string }
-  | { type: 'ADVANCE_TURN' };
+  | { type: 'ADVANCE_TURN' }
+  | { type: 'DISMISS_PROPOSAL' }
+  | { type: 'SET_GENERATING'; generating: boolean }
+  | { type: 'RELOAD' };
 
 // ── Reducer ──
 
@@ -92,10 +97,13 @@ function reducer(state: AppState, action: Action): AppState {
       if (!result.success) return state;
       return {
         ...state,
-        game: result.state,
+        game: { ...result.state, adoption_proposal: null },
         log: addLog(state, `收养了鼠鼠: ${action.data.name}`, 'adopt'),
       };
     }
+
+    case 'DISMISS_PROPOSAL':
+      return { ...state, game: { ...state.game, adoption_proposal: null } };
 
     case 'ASSIGN_HAMSTER': {
       const result = assignHamster(state.game, action.hamsterId, action.facilityId);
@@ -157,11 +165,20 @@ function reducer(state: AppState, action: Action): AppState {
         log.push({ turn: game.turn, text: `解锁成就: ${ach.name} (+${ach.reward}星尘)`, type: 'achievement' });
       }
 
-      // 3. 生成下回合事件槽（实际事件由 AI 生成，这里只是占位）
-      const slots = rollEventSlots(game);
-      log.push({ turn: game.turn, text: `本回合事件槽: ${slots.join('、')}`, type: 'turn' });
-
       return { ...state, game, log };
+    }
+
+    case 'SET_GENERATING':
+      return { ...state, generating: action.generating };
+
+    case 'RELOAD': {
+      // 从 MVU 重新加载最新状态（AI 更新后调用）
+      try {
+        const freshState = loadGameState();
+        return { ...state, game: freshState, generating: false };
+      } catch {
+        return { ...state, generating: false };
+      }
     }
 
     default:
@@ -174,6 +191,10 @@ function reducer(state: AppState, action: Action): AppState {
 interface StoreContextValue {
   state: AppState;
   dispatch: React.Dispatch<Action>;
+  /** 推进回合并触发 AI 生成 */
+  advanceTurnAndGenerate: () => Promise<void>;
+  /** 与角色互动并触发 AI 生成 */
+  interactWithCharacter: (characterId: string) => Promise<void>;
 }
 
 const StoreContext = createContext<StoreContextValue | null>(null);
@@ -203,6 +224,7 @@ const initialAppState: AppState = {
   tab: 'overview',
   log: [],
   loading: true,
+  generating: false,
 };
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -233,8 +255,74 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   }, [state.game, state.loading]);
 
+  // AI 生成完成后从 MVU 重新加载状态
+  useEffect(() => {
+    const handler = eventOn(iframe_events.GENERATION_ENDED, () => {
+      // 给 MVU 一点时间完成 JSONPatch 应用和 VARIABLE_UPDATE_ENDED 钩子
+      setTimeout(() => dispatch({ type: 'RELOAD' }), 300);
+    });
+    return () => handler.stop();
+  }, []);
+
+  // 4.2 推进回合并触发 AI 生成
+  const advanceTurnAndGenerate = useCallback(async () => {
+    if (state.generating) return;
+
+    // 1. 引擎结算（同步 reducer）
+    dispatch({ type: 'ADVANCE_TURN' });
+    dispatch({ type: 'SET_GENERATING', generating: true });
+
+    try {
+      // 2. 等待状态保存到 MVU（auto-save effect 会处理）
+      // 这里手动保存确保 AI 读到最新状态
+      const freshState = loadGameState();
+      const settled = checkAchievements(settleTurn(tickCooldowns(freshState)));
+      await saveGameState(settled.state);
+
+      // 3. 创建 user 消息楼层（触发世界书 EJS 模板注入动态提示词）
+      await createChatMessages(
+        [{ role: 'user', message: `[推进到回合 ${settled.state.turn}]` }],
+        { refresh: 'none' },
+      );
+
+      // 4. 调用 AI 生成（世界书自动注入状态摘要+事件指令）
+      await generate({
+        should_stream: true,
+      });
+    } catch (e) {
+      console.error('[鼠鼠天堂] AI 生成失败:', e);
+      dispatch({ type: 'SET_GENERATING', generating: false });
+    }
+    // 注意：generating 状态由 GENERATION_ENDED 事件监听器重置
+  }, [state.generating]);
+
+  // 4.4 个体互动
+  const interactWithCharacter = useCallback(async (characterId: string) => {
+    if (state.generating) return;
+
+    dispatch({ type: 'SET_GENERATING', generating: true });
+
+    try {
+      const game = loadGameState();
+      const character = game.hamsters[characterId] || game.angels[characterId];
+      const name = character?.name ?? characterId;
+
+      await createChatMessages(
+        [{ role: 'user', message: `[与${name}互动]` }],
+        { refresh: 'none' },
+      );
+
+      await generate({
+        should_stream: true,
+      });
+    } catch (e) {
+      console.error('[鼠鼠天堂] 互动生成失败:', e);
+      dispatch({ type: 'SET_GENERATING', generating: false });
+    }
+  }, [state.generating]);
+
   return (
-    <StoreContext.Provider value={{ state, dispatch }}>
+    <StoreContext.Provider value={{ state, dispatch, advanceTurnAndGenerate, interactWithCharacter }}>
       {children}
     </StoreContext.Provider>
   );

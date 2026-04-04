@@ -23,7 +23,7 @@ const StaminaBar: React.FC<{ value: number }> = ({ value }) => (
 );
 
 const Hamsters: React.FC = () => {
-  const { state, dispatch } = useStore();
+  const { state, dispatch, interactWithCharacter } = useStore();
   const game = state.game;
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [assigningId, setAssigningId] = useState<string | null>(null);
@@ -99,6 +99,14 @@ const Hamsters: React.FC = () => {
                       {assigning ? '取消' : '分配到设施'}
                     </button>
                   )}
+                  {/* 互动 */}
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => interactWithCharacter(hId)}
+                    disabled={state.generating}
+                  >
+                    {state.generating ? '互动中...' : '互动'}
+                  </button>
                 </div>
 
                 {/* 设施选择 */}

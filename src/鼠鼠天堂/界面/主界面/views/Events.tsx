@@ -1,4 +1,4 @@
-// 3.3.2 事件页 — 事件卡片 + 选项选择
+// 3.3.2 事件页 — 事件卡片 + 选项选择 + 收养提案
 
 import React from 'react';
 import { useStore } from '../store';
@@ -13,18 +13,64 @@ const Delta: React.FC<{ value: number; icon: string }> = ({ value, icon }) => {
 const Events: React.FC = () => {
   const { state, dispatch } = useStore();
   const eventEntries = Object.entries(state.game.pending_events);
+  const proposal = state.game.adoption_proposal;
+  const hasContent = eventEntries.length > 0 || proposal;
 
-  if (eventEntries.length === 0) {
+  if (!hasContent) {
     return (
       <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 32 }}>
         当前没有待处理事件
-        <div style={{ fontSize: 12, marginTop: 8 }}>推进回合后会生成新事件</div>
+        <div style={{ fontSize: 12, marginTop: 8 }}>
+          {state.generating ? '正在生成事件...' : '推进回合后会生成新事件'}
+        </div>
       </div>
     );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {/* 收养提案 */}
+      {proposal && (
+        <div className="card" style={{ borderColor: '#f472b6', background: '#fdf2f8' }}>
+          <div style={{ fontWeight: 600, marginBottom: 6, color: '#be185d' }}>有一只鼠鼠在乐园门口等待收养!</div>
+          <div style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 8 }}>
+            <div><b>{proposal.name}</b> — {proposal.breed}</div>
+            <div>性格: {proposal.personality}</div>
+            <div>基础产能: ⚡{proposal.basePower}{proposal.preference ? ` | 偏好: ${proposal.preference}` : ''}</div>
+            {proposal.story && <div style={{ marginTop: 4, color: '#6b7280', fontStyle: 'italic' }}>{proposal.story}</div>}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                const id = proposal.name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now().toString(36);
+                dispatch({
+                  type: 'ADOPT_HAMSTER',
+                  hamsterId: id,
+                  data: {
+                    name: proposal.name,
+                    breed: proposal.breed,
+                    personality: proposal.personality,
+                    basePower: proposal.basePower,
+                    preference: proposal.preference,
+                    story: proposal.story,
+                  },
+                });
+              }}
+            >
+              收养 (⚡-15)
+            </button>
+            <button
+              className="btn"
+              onClick={() => dispatch({ type: 'DISMISS_PROPOSAL' })}
+            >
+              下次再说
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 事件列表 */}
       {eventEntries.map(([eventId, event]) => (
         <div key={eventId} className="card">
           {/* 事件描述 */}

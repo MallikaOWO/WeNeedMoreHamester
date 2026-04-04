@@ -1,7 +1,1 @@
-```
-<body>
-<script>
-$('body').load('https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/界面/主界面/index.html')
-</script>
-</body>
-```
+<StatusPlaceHolderImpl/>
