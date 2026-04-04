@@ -1,2 +1,2 @@
-$(()=>{$('#chat > .mes').not('.last_mes').remove();let e=SillyTavern.getCurrentChatId();eventOn(tavern_events.CHAT_CHANGED,t=>{e!==t&&(e=t,reloadIframe())})});
+$(()=>{$('#chat > .mes:gt(0)').remove();const e=document.getElementById('chat');if(e){new MutationObserver(()=>{const t=e.querySelectorAll(':scope > .mes');for(let e=1;e<t.length;e++)t[e].remove()}).observe(e,{childList:!0})}let t=SillyTavern.getCurrentChatId();eventOn(tavern_events.CHAT_CHANGED,e=>{t!==e&&(t=e,reloadIframe())})});
 //# sourceMappingURL=index.js.map

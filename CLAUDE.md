@@ -69,3 +69,8 @@ doc/                         — 设计文档和工作流
 - `pnpm build:dev` — 开发构建
 - `pnpm watch` — 开发监听模式
 - `pnpm dump` — 生成 schema.json
+
+## 工作目录提醒
+- 总目录是`E:\WeNeedMoreHamster`
+- 游戏本体所在的目录是`E:\WeNeedMoreHamster\WeNeedMoreHamester`
+- 部分参考文件在总目录中，比如`tavern_helper_template/.cursor/rules`
