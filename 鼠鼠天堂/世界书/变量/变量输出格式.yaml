@@ -1,45 +1,55 @@
 ---
-变量输出格式:
+回复输出格式:
   rule:
-    - you must output the update analysis and the actual update commands at the end of your reply, after all narrative text
-    - the update commands work like **JSON Patch (RFC 6902)** standard, must be a valid JSON array containing operation objects, but supports the following operations instead:
-      - replace: replace the value of existing paths
-      - delta: update the value of existing number paths by a delta value
-      - insert: insert new items into an object (for adding events, memories, etc.)
-      - remove: remove items from an object
-      - move: move items between paths
-    - only update fields listed in 变量更新规则: pending_events, hamsters.*.memory, angels.*.memory, adoption_proposal
-    - never update code-managed fields: energy, energyCap, stardust, happiness, turn, mood, stamina, assignedTo, level, exp, skills, facilities, achievements
-  format: |-
-    <UpdateVariable>
-    <Analysis>$(IN ENGLISH, no more than 80 words)
-    - ${how many events to generate this turn, what types}
-    - ${which characters are involved, need memory updates}
-    - ${whether adoption event is included}
-    </Analysis>
-    <JSONPatch>
-    [
-      { "op": "insert", "path": "/pending_events/${事件ID}", "value": { "description": "...", "related_characters": "...", "options": { "a": { "label": "...", "energy_delta": 0, "stardust_delta": 0, "mood_delta": 0 }, ... } } },
-      { "op": "insert", "path": "/hamsters/${鼠鼠ID}/memory/${记忆ID}", "value": "${记忆文本}" },
-      { "op": "insert", "path": "/angels/${天使ID}/memory/${记忆ID}", "value": "${记忆文本}" },
-      { "op": "replace", "path": "/adoption_proposal", "value": { "name": "...", "breed": "...", "personality": "...", "basePower": 5, "preference": "...", "story": "..." } },
-      ...
-    ]
-    </JSONPatch>
-    </UpdateVariable>
+    - 回复必须由以下 XML 标签组成，每个部分都包裹在对应标签中
+    - 不要输出标签之外的裸文本
+    - 标签顺序固定：<Narrative> -> <UpdateVariable>
+
+  sections:
+    Narrative:
+      说明: 叙事内容（事件描述、天使对话、鼠鼠动作描写）
+      格式: |-
+        <Narrative>
+        ${叙事文本，2-4句/事件，温馨治愈基调}
+        </Narrative>
+
+    UpdateVariable:
+      说明: 变量更新命令，JSON Patch 格式
+      支持操作: replace / delta / insert / remove / move
+      仅允许更新: pending_events, hamsters.*.memory, angels.*.memory, adoption_proposal
+      格式: |-
+        <UpdateVariable>
+        <Analysis>$(IN ENGLISH, max 80 words: event count/types, characters involved, adoption included?)
+        </Analysis>
+        <JSONPatch>
+        [
+          { "op": "insert", "path": "/pending_events/${事件ID}", "value": { ... } },
+          { "op": "insert", "path": "/hamsters/${鼠鼠ID}/memory/${记忆ID}", "value": "..." },
+          { "op": "insert", "path": "/angels/${天使ID}/memory/${记忆ID}", "value": "..." },
+          ...
+        ]
+        </JSONPatch>
+        </UpdateVariable>
+
+    StatusPlaceHolderImpl:
+      说明: 界面占位符，必须在回复最末尾
+      格式: <StatusPlaceHolderImpl/>
+
   example: |-
-    （叙事文本）
+    <Narrative>
+    布丁跑着跑着突然打了个喷嚏，整只鼠从跑轮上飞了出去！棉花慌张地跑过来，围巾都歪了："布丁！你没事吧？"布丁揉了揉鼻子，一脸懵地看着自己飞出三米远的距离，似乎对自己的弹射力很满意。
+
+    星星突然抬起头，紫色的眼睛闪了闪："……地下……有什么在发光。"她说完又沉默了，但尖帽上的星尘粒子明显比平时活跃得多。螺丝放下扳手凑过来："具体位置呢？"星星缓缓指了指跑轮区的东北角。
+    </Narrative>
 
     <UpdateVariable>
     <Analysis>
-    - Turn 6: generating 2 daily events. Event A involves puding (sneeze incident), event B involves xingxing (stardust sensing).
-    - Memory updates for puding and xingxing. Mianhua also involved, gets memory.
-    - No adoption event this turn.
+    Turn 6: 2 daily events. A: puding sneeze incident (puding, mianhua involved). B: xingxing senses underground glow (xingxing, luosi involved). No adoption.
     </Analysis>
     <JSONPatch>
     [
-      { "op": "insert", "path": "/pending_events/evt_6a", "value": { "description": "布丁跑着跑着突然打了个喷嚏，整只鼠从跑轮上飞了出去！", "related_characters": "puding", "options": { "a": { "label": "赶紧冲过去接住她", "energy_delta": 5, "stardust_delta": 0, "mood_delta": 10, "mood_target": "puding" }, "b": { "label": "让她体验飞翔的感觉", "energy_delta": 12, "stardust_delta": 0, "mood_delta": -5, "mood_target": "puding" }, "c": { "label": "你也跳上跑轮一起转", "energy_delta": -3, "stardust_delta": 0, "mood_delta": 15, "is_silly": true } } } },
-      { "op": "insert", "path": "/pending_events/evt_6b", "value": { "description": "星星突然抬起头，紫色的眼睛闪了闪：\"……地下……有什么在发光。\"", "related_characters": "xingxing", "options": { "a": { "label": "派螺丝去挖掘", "energy_delta": 0, "stardust_delta": 8, "mood_delta": 0 }, "b": { "label": "全员寻宝大会！", "energy_delta": -10, "stardust_delta": 3, "mood_delta": 10 }, "c": { "label": "假装没听到", "energy_delta": 0, "stardust_delta": 0, "mood_delta": 0 } } } },
+      { "op": "insert", "path": "/pending_events/evt_6a", "value": { "description": "布丁从跑轮上飞了出去！", "related_characters": "puding,mianhua", "options": { "a": { "label": "赶紧冲过去接住她", "energy_delta": 5, "stardust_delta": 0, "mood_delta": 10, "mood_target": "puding" }, "b": { "label": "让她体验飞翔的感觉", "energy_delta": 12, "stardust_delta": 0, "mood_delta": -5, "mood_target": "puding" }, "c": { "label": "你也跳上跑轮一起转", "energy_delta": -3, "stardust_delta": 0, "mood_delta": 15, "is_silly": true } } } },
+      { "op": "insert", "path": "/pending_events/evt_6b", "value": { "description": "星星感应到地下有神秘光源", "related_characters": "xingxing,luosi", "options": { "a": { "label": "派螺丝去挖掘", "energy_delta": 0, "stardust_delta": 8, "mood_delta": 0 }, "b": { "label": "全员寻宝大会！", "energy_delta": -10, "stardust_delta": 3, "mood_delta": 10 }, "c": { "label": "假装没听到", "energy_delta": 0, "stardust_delta": 0, "mood_delta": 0 } } } },
       { "op": "insert", "path": "/hamsters/puding/memory/t6_sneeze", "value": "从跑轮上飞出去了，主人接住了她" },
       { "op": "insert", "path": "/angels/xingxing/memory/t6_sense", "value": "感应到地下有神秘光源，向园长报告" },
       { "op": "insert", "path": "/angels/mianhua/memory/t6_worried", "value": "担心布丁受伤，跑去检查" }
