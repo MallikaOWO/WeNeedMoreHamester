@@ -255,13 +255,45 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   }, [state.game, state.loading]);
 
-  // AI 生成完成后从 MVU 重新加载状态
-  useEffect(() => {
-    const handler = eventOn(iframe_events.GENERATION_ENDED, () => {
-      // 给 MVU 一点时间完成 JSONPatch 应用和 VARIABLE_UPDATE_ENDED 钩子
-      setTimeout(() => dispatch({ type: 'RELOAD' }), 300);
-    });
-    return () => handler.stop();
+  /**
+   * 同层前端核心流程：
+   * ① createChatMessages(user) → 静默创建 user 楼层（附带 MVU 数据）
+   * ② generate() → 调用 LLM 获取回复文本
+   * ③ Mvu.parseMessage() → 解析 AI 输出中的 UpdateVariable/JSONPatch
+   * ④ createChatMessages(assistant) → 静默创建 assistant 楼层（附带更新后的 MVU 数据）
+   * ⑤ 重载前端状态
+   */
+  const sendAndGenerate = useCallback(async (userMessage: string) => {
+    // 读取当前最新楼层的 MVU 数据作为 base
+    const baseMvuData = Mvu.getMvuData({ type: 'message', message_id: 'latest' });
+
+    // ① 创建 user 楼层（携带当前 MVU 数据，refresh:'none' 不刷新显示）
+    await createChatMessages(
+      [{ role: 'user', message: userMessage, data: _.cloneDeep(baseMvuData) }],
+      { refresh: 'none' },
+    );
+
+    let aiText: string;
+    try {
+      // ② 调用 LLM 生成（流式）
+      aiText = await generate({ should_stream: true });
+    } catch (e) {
+      // 生成失败 → 回退：删除刚创建的 user 楼层
+      console.error('[鼠鼠天堂] AI 生成失败:', e);
+      const lastId = getLastMessageId();
+      if (lastId > 0) await deleteChatMessages([lastId], { refresh: 'none' });
+      throw e;
+    }
+
+    // ③ 解析 AI 输出中的变量更新命令（UpdateVariable/JSONPatch）
+    const parsedData = await Mvu.parseMessage(aiText, _.cloneDeep(baseMvuData));
+    const finalData = parsedData ?? baseMvuData;
+
+    // ④ 创建 assistant 楼层（携带解析后的 MVU 数据）
+    await createChatMessages(
+      [{ role: 'assistant', message: aiText, data: finalData }],
+      { refresh: 'none' },
+    );
   }, []);
 
   // 4.2 推进回合并触发 AI 生成
@@ -273,33 +305,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     dispatch({ type: 'SET_GENERATING', generating: true });
 
     try {
-      // 2. 等待状态保存到 MVU（auto-save effect 会处理）
-      // 这里手动保存确保 AI 读到最新状态
+      // 2. 确保结算后的状态已写入 MVU
       const freshState = loadGameState();
-      const settled = checkAchievements(settleTurn(tickCooldowns(freshState)));
-      await saveGameState(settled.state);
+      const game = checkAchievements(settleTurn(tickCooldowns(freshState))).state;
+      await saveGameState(game);
 
-      // 3. 创建 user 消息楼层（触发世界书 EJS 模板注入动态提示词）
-      await createChatMessages(
-        [{ role: 'user', message: `[推进到回合 ${settled.state.turn}]` }],
-        { refresh: 'none' },
-      );
+      // 3. 同层前端流程：创建消息 → 生成 → 解析 → 创建回复
+      await sendAndGenerate(`[推进到回合 ${game.turn}]`);
 
-      // 4. 调用 AI 生成（世界书自动注入状态摘要+事件指令）
-      await generate({
-        should_stream: true,
-      });
+      // 4. 从最新楼层重新加载状态
+      dispatch({ type: 'RELOAD' });
     } catch (e) {
-      console.error('[鼠鼠天堂] AI 生成失败:', e);
+      console.error('[鼠鼠天堂] 回合推进失败:', e);
       dispatch({ type: 'SET_GENERATING', generating: false });
     }
-    // 注意：generating 状态由 GENERATION_ENDED 事件监听器重置
-  }, [state.generating]);
+  }, [state.generating, sendAndGenerate]);
 
   // 4.4 个体互动
   const interactWithCharacter = useCallback(async (characterId: string) => {
     if (state.generating) return;
-
     dispatch({ type: 'SET_GENERATING', generating: true });
 
     try {
@@ -307,19 +331,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const character = game.hamsters[characterId] || game.angels[characterId];
       const name = character?.name ?? characterId;
 
-      await createChatMessages(
-        [{ role: 'user', message: `[与${name}互动]` }],
-        { refresh: 'none' },
-      );
-
-      await generate({
-        should_stream: true,
-      });
+      await sendAndGenerate(`[与${name}互动]`);
+      dispatch({ type: 'RELOAD' });
     } catch (e) {
-      console.error('[鼠鼠天堂] 互动生成失败:', e);
+      console.error('[鼠鼠天堂] 互动失败:', e);
       dispatch({ type: 'SET_GENERATING', generating: false });
     }
-  }, [state.generating]);
+  }, [state.generating, sendAndGenerate]);
 
   return (
     <StoreContext.Provider value={{ state, dispatch, advanceTurnAndGenerate, interactWithCharacter }}>
