@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://testingcf.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/preset.zh.json
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/preset.zh.json
 设置:
   上下文长度: 2000000
   最大回复token数: 30000

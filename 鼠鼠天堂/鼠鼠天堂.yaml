@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://testingcf.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/character.zh.json
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/character.zh.json
 头像: 头像
 版本: 0.1.0
 作者: Mallikā
@@ -186,7 +186,7 @@
         ```
         <body>
         <script>
-        $('body').load('https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/界面/主界面/index.html')
+        $('body').load('https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/界面/主界面/index.html')
         </script>
         </body>
         ```
@@ -204,20 +204,20 @@
         启用: true
         类型: 脚本
         内容: |-
-          import 'https://testingcf.jsdelivr.net/gh/MagicalAstrogy/MagVarUpdate/artifact/bundle.js';
+          import 'https://cdn.jsdelivr.net/gh/MagicalAstrogy/MagVarUpdate/artifact/bundle.js';
 
       - 名称: 变量结构
         id: f65ab164-4268-4366-8228-16af904c2251
         启用: true
         类型: 脚本
         内容: |-
-          import 'https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/脚本/变量结构/index.js';
+          import 'https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/脚本/变量结构/index.js';
 
       - 名称: 隐藏楼层
         id: a1b2c3d4-5678-9abc-def0-111111111111
         启用: true
         类型: 脚本
         内容: |-
-          import 'https://testingcf.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/脚本/隐藏楼层/index.js';
+          import 'https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/鼠鼠天堂/脚本/隐藏楼层/index.js';
 
     变量: {}

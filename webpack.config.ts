@@ -482,7 +482,7 @@ function parse_configuration(entry: Entry): (env: any, argv: any) => webpack.Con
       };
       return callback(
         null,
-        'module-import ' + (cdn[request] ?? `https://testingcf.jsdelivr.net/npm/${request}/+esm`),
+        'module-import ' + (cdn[request] ?? `https://cdn.jsdelivr.net/npm/${request}/+esm`),
       );
     },
   };
