@@ -154,9 +154,14 @@ function reducer(state: AppState, action: Action): AppState {
     case 'USE_SKILL': {
       const result = useSkill(state.game, action.angelId, action.skillId, action.targetId);
       if (!result.success) return state;
+      // 技能可能改变鼠鼠心情，重新计算全局 happiness
+      const hams = Object.values(result.state.hamsters);
+      const newHappiness = hams.length > 0
+        ? Math.round(hams.reduce((s, h) => s + h.mood, 0) / hams.length)
+        : result.state.happiness;
       return {
         ...state,
-        game: result.state,
+        game: { ...result.state, happiness: newHappiness },
         log: addLog(state, `使用了技能: ${action.skillId}`, 'skill'),
       };
     }

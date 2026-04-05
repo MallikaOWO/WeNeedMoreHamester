@@ -55,7 +55,7 @@ export const PERSONALITIES: PersonalityDef[] = [
   },
 ];
 
-/** 获取性格定义 */
-export function getPersonalityDef(id: string): PersonalityDef | undefined {
-  return PERSONALITIES.find(p => p.id === id);
+/** 获取性格定义（支持按 id 或 name 查找） */
+export function getPersonalityDef(idOrName: string): PersonalityDef | undefined {
+  return PERSONALITIES.find(p => p.id === idOrName || p.name === idOrName);
 }

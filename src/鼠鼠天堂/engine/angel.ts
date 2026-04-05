@@ -167,23 +167,25 @@ export function useSkill(
       break;
     }
     case 'preview_event': {
-      // 幸运预感：添加预览 buff（前端可读取显示提示）
+      // 幸运加护：下回合事件必含一个高收益正面选项（通过 EJS 指示 AI）
+      // duration=2：经过 settleTurn 递减后仍保留 duration=1，供 EJS 模板读取
       buffs[`skill_${skillId}_${state.turn}`] = {
-        type: 'preview_event',
+        type: 'lucky_guard',
         target: 'global',
         value: 1,
-        duration: 1,
-        description: '泡芙的耳朵抖了抖："我闻到了下回合的气息~"',
+        duration: 2,
+        description: '泡芙的四叶草微微发光："好事要来了哦~"',
       };
       break;
     }
     case 'force_event_type': {
       // 好运连连：下回合强制至少一个 opportunity 事件
+      // duration=2：同上，需存活到 EJS 模板读取
       buffs[`skill_${skillId}_${state.turn}`] = {
         type: 'force_opportunity',
         target: 'global',
         value: 1,
-        duration: 1,
+        duration: 2,
         description: '泡芙的四叶草发光了 — 下回合必出机遇事件',
       };
       break;

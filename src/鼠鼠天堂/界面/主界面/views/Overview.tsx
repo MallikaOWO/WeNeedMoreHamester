@@ -36,6 +36,63 @@ interface FacilityBreakdown {
   subtotal: number;
 }
 
+interface MoodForecast {
+  hamsterDetails: { name: string; current: number; delta: number; predicted: number }[];
+  currentAvg: number;
+  predictedAvg: number;
+}
+
+const MOOD_COST_PER_TURN = 8;
+
+/** 预估下回合心情变化 */
+function calcMoodForecast(game: ReturnType<typeof useStore>['state']['game']): MoodForecast {
+  const hamsters = Object.values(game.hamsters);
+  if (hamsters.length === 0) return { hamsterDetails: [], currentAvg: game.happiness, predictedAvg: game.happiness };
+
+  const details: MoodForecast['hamsterDetails'] = [];
+
+  for (const h of hamsters) {
+    let delta = 0;
+
+    // 工作消耗心情
+    if (h.workingAt) {
+      const livingFac = h.livingAt ? game.facilities[h.livingAt] : null;
+      const livingAngel = livingFac?.managedBy ? game.angels[livingFac.managedBy] : null;
+      const reduction = livingAngel?.manageDomain === 'life' ? Math.round(MOOD_COST_PER_TURN * 0.5) : MOOD_COST_PER_TURN;
+      delta -= reduction;
+    }
+
+    // 休息中：生活设施心情恢复
+    if (!h.workingAt && h.livingAt) {
+      const fac = game.facilities[h.livingAt];
+      if (fac?.managedBy) {
+        const def = getFacilityDef(fac.type);
+        if (def && def.category === 'living' && def.moodRegen > 0) {
+          const levelMult = 1 + (fac.level - 1) * 0.3;
+          const mianhuaBonus = game.angels[fac.managedBy]?.manageDomain === 'life' ? 1.3 : 1;
+          delta += Math.round(def.moodRegen * levelMult * mianhuaBonus);
+        }
+      }
+    }
+
+    // 交谊厅全体加成
+    for (const f of Object.values(game.facilities)) {
+      if (f.type === 'lounge' && f.managedBy) {
+        const levelMult = 1 + (f.level - 1) * 0.3;
+        delta += Math.round(2 * levelMult);
+      }
+    }
+
+    const predicted = Math.max(0, Math.min(100, h.mood + delta));
+    details.push({ name: h.name, current: h.mood, delta, predicted });
+  }
+
+  const currentAvg = Math.round(details.reduce((s, d) => s + d.current, 0) / details.length);
+  const predictedAvg = Math.round(details.reduce((s, d) => s + d.predicted, 0) / details.length);
+
+  return { hamsterDetails: details, currentAvg, predictedAvg };
+}
+
 /** 计算产能明细 */
 function calcProductionBreakdown(game: ReturnType<typeof useStore>['state']['game']): {
   facilities: FacilityBreakdown[];
@@ -48,7 +105,7 @@ function calcProductionBreakdown(game: ReturnType<typeof useStore>['state']['gam
   const facilities: FacilityBreakdown[] = [];
   let rawTotal = 0;
 
-  for (const [, f] of Object.entries(game.facilities)) {
+  for (const [fId, f] of Object.entries(game.facilities)) {
     const def = getFacilityDef(f.type);
     if (!def || def.category !== 'play' || def.basePower <= 0) continue;
     if (!f.managedBy) continue;
@@ -64,6 +121,14 @@ function calcProductionBreakdown(game: ReturnType<typeof useStore>['state']['gam
       const raw = (def.basePower + h.basePower) * levelMult * angelMult;
       subtotal += raw;
       hamsterDetails.push({ name: h.name, base: h.basePower, facilityBase: def.basePower, levelMult, angelMult });
+    }
+
+    // 应用 production_boost / facility_down buff
+    for (const buff of Object.values(game.buffs)) {
+      if (buff.target === fId) {
+        if (buff.type === 'production_boost') subtotal = subtotal * (1 + buff.value / 100);
+        if (buff.type === 'facility_down') subtotal = subtotal * 0.5;
+      }
     }
 
     if (hamsterDetails.length > 0) {
@@ -92,6 +157,7 @@ const Overview: React.FC = () => {
   const [showResourceHelp, setShowResourceHelp] = useState(false);
   const game = state.game;
   const production = calcProductionBreakdown(game);
+  const moodForecast = calcMoodForecast(game);
   const pendingCount = Object.keys(game.pending_events).length;
   const hamsterCount = Object.keys(game.hamsters).length;
   const facilityCount = Object.keys(game.facilities).length;
@@ -165,8 +231,16 @@ const Overview: React.FC = () => {
             {Object.values(game.facilities).some(f => f.type === 'stardust_altar' && f.managedBy) && (
               <span style={{ marginLeft: 8, fontWeight: 600 }}>✨ +2</span>
             )}
+            {moodForecast.hamsterDetails.length > 0 && (() => {
+              const delta = moodForecast.predictedAvg - moodForecast.currentAvg;
+              return (
+                <span style={{ marginLeft: 8, fontWeight: 600, color: delta < 0 ? '#ef4444' : delta > 0 ? '#22c55e' : undefined }}>
+                  💛 {delta >= 0 ? '+' : ''}{delta}
+                </span>
+              );
+            })()}
           </div>
-          {production.facilities.length > 0 && (
+          {(production.facilities.length > 0 || moodForecast.hamsterDetails.length > 0) && (
             <button
               className="btn btn-sm"
               style={{ fontSize: 11, color: '#9ca3af' }}
@@ -203,6 +277,17 @@ const Overview: React.FC = () => {
                 净收入: <b>⚡{production.netTotal}</b>
               </div>
             </div>
+            {moodForecast.hamsterDetails.length > 0 && (
+              <div style={{ borderTop: '1px dashed #e5e7eb', paddingTop: 4, marginTop: 4 }}>
+                <div style={{ color: '#6b7280', marginBottom: 4 }}>心情预估 (当前均值 💛{moodForecast.currentAvg} → 预估 💛{moodForecast.predictedAvg})</div>
+                {moodForecast.hamsterDetails.map((md, i) => (
+                  <div key={i} style={{ color: '#6b7280', paddingLeft: 8 }}>
+                    {md.name}: 💛{md.current} {md.delta >= 0 ? '+' : ''}{md.delta} → <span style={{ color: md.delta < 0 ? '#ef4444' : md.delta > 0 ? '#22c55e' : '#374151' }}>{md.predicted}</span>
+                    {md.delta < 0 && ' (工作消耗)'}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

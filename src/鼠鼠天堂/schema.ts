@@ -11,9 +11,10 @@ const SkillStateSchema = z.object({
 // ── 事件选项 [AI 生成，代码结算] ──
 const EventOptionSchema = z.object({
   label: z.string().prefault(''),
-  energy_delta: z.coerce.number().prefault(0),
-  stardust_delta: z.coerce.number().prefault(0),
-  mood_delta: z.coerce.number().prefault(0),
+  // 修剪AI生成的事件奖励，防止经济过宽松
+  energy_delta: z.coerce.number().transform(v => _.clamp(v, -30, 15)).prefault(0),
+  stardust_delta: z.coerce.number().transform(v => _.clamp(v, -5, 10)).prefault(0),
+  mood_delta: z.coerce.number().transform(v => _.clamp(v, -15, 20)).prefault(0),
   mood_target: z.string().optional(),
   is_silly: z.boolean().prefault(false),
   // 可选 buff：AI 可在选项中附加持续效果

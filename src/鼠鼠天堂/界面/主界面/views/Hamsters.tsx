@@ -112,7 +112,7 @@ const Hamsters: React.FC = () => {
             {expanded && (
               <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
                 <div style={{ fontSize: 12, marginBottom: 4 }}>故事: {h.story}</div>
-                <div style={{ fontSize: 12, marginBottom: 4 }}>偏好设施: {h.preference || '无'}</div>
+                <div style={{ fontSize: 12, marginBottom: 4 }}>偏好设施: {(h.preference && FACILITY_DEFS.find(d => d.type === h.preference)?.name) || h.preference || '无'}</div>
                 <div style={{ fontSize: 12, marginBottom: 8 }}>基础产能: ⚡{h.basePower}</div>
 
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -125,13 +125,19 @@ const Hamsters: React.FC = () => {
                       回窝休息
                     </button>
                   ) : (
-                    <button
-                      className="btn btn-sm"
-                      onClick={() => setAssignMode(isAssigning && assignMode?.type === 'work' ? null : { hamsterId: hId, type: 'work' })}
-                      disabled={availableWorkFacilities.length === 0}
-                    >
-                      {isAssigning && assignMode?.type === 'work' ? '取消' : '去玩耍'}
-                    </button>
+                    <>
+                      <button
+                        className="btn btn-sm"
+                        onClick={() => setAssignMode(isAssigning && assignMode?.type === 'work' ? null : { hamsterId: hId, type: 'work' })}
+                        disabled={availableWorkFacilities.length === 0}
+                        style={availableWorkFacilities.length === 0 ? { opacity: 0.5 } : undefined}
+                      >
+                        {isAssigning && assignMode?.type === 'work' ? '取消' : '去玩耍'}
+                      </button>
+                      {availableWorkFacilities.length === 0 && (
+                        <span style={{ fontSize: 11, color: '#dc2626' }}>玩耍设施已满</span>
+                      )}
+                    </>
                   )}
                   {/* 换住所 */}
                   <button

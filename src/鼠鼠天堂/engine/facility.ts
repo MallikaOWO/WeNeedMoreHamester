@@ -38,7 +38,16 @@ export function buildFacility(state: GameState, facilityType: string): GameState
 
   // 自动分配对应方向的天使（如果空闲）
   let managedBy: string | null = null;
-  if (def.manageDomain !== 'any') {
+  if (def.manageDomain === 'any') {
+    // 功能设施：任意空闲天使均可管理
+    for (const [aId, a] of Object.entries(state.angels)) {
+      if (!a.assignedFacility) {
+        managedBy = aId;
+        break;
+      }
+    }
+  } else {
+    // 专属方向设施：只匹配对应方向的天使
     for (const [aId, a] of Object.entries(state.angels)) {
       if (a.manageDomain === def.manageDomain && !a.assignedFacility) {
         managedBy = aId;

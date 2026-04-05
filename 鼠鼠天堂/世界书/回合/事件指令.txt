@@ -4,6 +4,9 @@
 <% var gamebuffs = getvar('stat_data.buffs', {defaults: {}}); _%>
 <% var eventFlags = getvar('stat_data.event_flags', {defaults: {}}); _%>
 <% var forceOpportunity = Object.values(gamebuffs).some(function(b) { return b.type === 'force_opportunity'; }); _%>
+<% var luckyGuard = Object.values(gamebuffs).some(function(b) { return b.type === 'lucky_guard'; }); _%>
+<% var facilities = getvar('stat_data.facilities', {defaults: {}}); _%>
+<% var hasWatchtower = Object.values(facilities).some(function(f) { return f.type === 'watchtower' && f.managedBy; }); _%>
 <% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); _%>
 <% var hamsterCount = Object.keys(hamsters).length; _%>
 <% var proposal = getvar('stat_data.adoption_proposal', {defaults: null}); _%>
@@ -80,9 +83,17 @@ _%>
 <% } _%>
 - 角色ID: 鼠鼠用变量中的ID（hamster_1 等），天使用 mianhua / luosi / xingxing / paofu
 - 涉及角色须写入 memory
+<% if (luckyGuard) { _%>
+
+【幸运加护】泡芙的四叶草微微发光！本回合每个事件的选项中，必须包含至少一个"幸运选项"：正收益高于同类事件平时的 1.5-2 倍（如 energy_delta +12~15 或 stardust_delta +5~8），且无负面后果。幸运选项的描述中要体现好运的氛围。
+<% } _%>
 <% if (forceOpportunity) { _%>
 
 【好运连连】泡芙的四叶草正在发光！本回合至少一个事件必须为 opportunity 类型（机遇事件），且奖励高于平时。
+<% } _%>
+<% if (hasWatchtower) { _%>
+
+【瞭望台预警】瞭望台的天使发来信号！本回合生成事件时，必须在每个事件描述开头添加一句简短的预警提示（如"远处传来异响……"），暗示事件的类型（日常/挑战/机遇/特殊），让玩家有心理准备。挑战事件的预警语气应更紧张。
 <% } _%>
 <%
   var flagKeys = Object.keys(eventFlags);

@@ -3,6 +3,7 @@
 import React from 'react';
 import { useStore } from '../store';
 import { getTabGuides } from '../guides';
+import { getFacilityDef } from '../../../data/facilities';
 
 /** 资源变化标注 */
 const Delta: React.FC<{ value: number; icon: string }> = ({ value, icon }) => {
@@ -17,6 +18,19 @@ const Events: React.FC = () => {
   const proposal = state.game.adoption_proposal;
   const showProposal = proposal && !state.proposalDismissed;
   const hasContent = eventEntries.length > 0 || showProposal;
+
+  // 收养可行性检查
+  const adoptCheck = (() => {
+    if (!proposal) return { ok: false, reason: '' };
+    const game = state.game;
+    const livingCap = Object.values(game.facilities)
+      .filter(f => getFacilityDef(f.type)?.category === 'living')
+      .reduce((sum, f) => sum + f.capacity, 0);
+    const livingUsed = Object.values(game.hamsters).filter(h => h.livingAt).length;
+    if (livingUsed >= livingCap) return { ok: false, reason: '住所已满，请先建造新住所' };
+    if (game.energy < 15) return { ok: false, reason: `能源不足（需要15⚡，当前${game.energy}⚡）` };
+    return { ok: true, reason: '' };
+  })();
   const tips = getTabGuides(state.game).events;
 
   if (!hasContent) {
@@ -51,10 +65,18 @@ const Events: React.FC = () => {
             <div>基础产能: ⚡{proposal.basePower}{proposal.preference ? ` | 偏好: ${proposal.preference}` : ''}</div>
             {proposal.story && <div style={{ marginTop: 4, color: '#6b7280', fontStyle: 'italic' }}>{proposal.story}</div>}
           </div>
+          {!adoptCheck.ok && (
+            <div style={{ fontSize: 12, color: '#dc2626', marginBottom: 6, fontWeight: 500 }}>
+              ⚠ {adoptCheck.reason}
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <button
               className="btn btn-primary"
+              disabled={!adoptCheck.ok}
+              style={!adoptCheck.ok ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
               onClick={() => {
+                if (!adoptCheck.ok) return;
                 const existingCount = Object.keys(state.game.hamsters).length;
                 const id = `hamster_${existingCount + 1}`;
                 dispatch({

@@ -89,8 +89,8 @@ export const SKILLS: SkillDef[] = [
   // ── 泡芙 ──
   {
     id: 'lucky_hunch',
-    name: '幸运预感',
-    description: '预知下回合事件类型',
+    name: '幸运加护',
+    description: '下回合事件必含高收益选项',
     angelId: 'paofu',
     unlockedAtLevel: 1,
     cooldown: 3,

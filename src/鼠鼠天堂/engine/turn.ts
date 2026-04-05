@@ -66,6 +66,8 @@ function calcFacilityOutput(facility: Facility, hamsters: Record<string, Hamster
 const STAMINA_COST_PER_TURN = 20;
 const STAMINA_RESTORE_BASE = 15;
 const LOW_STAMINA_THRESHOLD = 25;
+/** 工作心情消耗 */
+const MOOD_COST_PER_TURN = 8;
 
 /** 结算一个回合 */
 export function settleTurn(state: GameState): GameState {
@@ -79,7 +81,7 @@ export function settleTurn(state: GameState): GameState {
     facilities[id] = { ...f, occupants: { ...f.occupants } };
   }
 
-  // ── 0. 应用 Buff 效果 ──
+  // ── 0. 应用即时 Buff 效果（不递减 duration，统一在末尾清理） ──
   const buffs = { ...state.buffs };
   for (const [buffId, buff] of Object.entries(buffs)) {
     if (buff.duration <= 0) { delete buffs[buffId]; continue; }
@@ -98,14 +100,9 @@ export function settleTurn(state: GameState): GameState {
         }
         break;
       }
-      case 'stardust_bonus': {
-        // 星尘加成在星尘结算阶段处理
-        break;
-      }
-      // production_boost / facility_down / stamina_save 在各自阶段处理
+      // production_boost / facility_down / stardust_bonus / stamina_save
+      // 在各自阶段处理，此处不动
     }
-    buffs[buffId] = { ...buff, duration: buff.duration - 1 };
-    if (buffs[buffId].duration <= 0) delete buffs[buffId];
   }
 
   // ── 1. 工作设施产能计算（仅 play 类设施的 occupants 产出） ──
@@ -135,7 +132,7 @@ export function settleTurn(state: GameState): GameState {
   }
   energy = Math.max(0, energy - totalMaintenance);
 
-  // ── 2. 工作中鼠鼠消耗体力，低体力自动停工回窝 ──
+  // ── 2. 工作中鼠鼠消耗体力和心情，低体力自动停工回窝 ──
   for (const [hId, h] of Object.entries(hamsters)) {
     if (h.workingAt) {
       // 螺丝被动：管理的 play 设施鼠鼠体力消耗 +3
@@ -143,6 +140,11 @@ export function settleTurn(state: GameState): GameState {
       const workAngel = workFacility?.managedBy ? state.angels[workFacility.managedBy] : null;
       const extraCost = workAngel?.manageDomain === 'power' ? 3 : 0;
       h.stamina = Math.max(0, h.stamina - STAMINA_COST_PER_TURN - extraCost);
+      // 工作消耗心情（棉花被动：管理的设施中工作的鼠鼠心情消耗减半）
+      const livingFacility = h.livingAt ? facilities[h.livingAt] : null;
+      const livingAngel = livingFacility?.managedBy ? state.angels[livingFacility.managedBy] : null;
+      const moodReduction = livingAngel?.manageDomain === 'life' ? Math.round(MOOD_COST_PER_TURN * 0.5) : MOOD_COST_PER_TURN;
+      h.mood = Math.max(0, h.mood - moodReduction);
       if (h.stamina <= LOW_STAMINA_THRESHOLD) {
         // 从工作设施移除（但仍留在 livingAt 的居住设施）
         const f = facilities[h.workingAt];
@@ -223,6 +225,12 @@ export function settleTurn(state: GameState): GameState {
   const happiness = hamsterValues.length > 0
     ? Math.round(hamsterValues.reduce((sum, h) => sum + h.mood, 0) / hamsterValues.length)
     : state.happiness;
+
+  // ── 8. Buff duration 递减与清理（所有阶段结束后统一处理） ──
+  for (const [buffId, buff] of Object.entries(buffs)) {
+    buffs[buffId] = { ...buff, duration: buff.duration - 1 };
+    if (buffs[buffId].duration <= 0) delete buffs[buffId];
+  }
 
   return {
     ...state,
