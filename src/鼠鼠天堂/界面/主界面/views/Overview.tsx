@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { useStore } from '../store';
+import { getTabGuides } from '../guides';
 import { getFacilityDef } from '../../../data/facilities';
-import { calcMoodMultiplier } from '../../../engine/turn';
+import { calcMoodMultiplier, calcAngelMult } from '../../../engine/turn';
 
 /** 资源进度条 */
 const ResourceBar: React.FC<{
@@ -31,7 +32,7 @@ const ResourceBar: React.FC<{
 
 interface FacilityBreakdown {
   name: string;
-  hamsterDetails: { name: string; base: number; facilityBase: number; levelMult: number }[];
+  hamsterDetails: { name: string; base: number; facilityBase: number; levelMult: number; angelMult: number }[];
   subtotal: number;
 }
 
@@ -41,6 +42,8 @@ function calcProductionBreakdown(game: ReturnType<typeof useStore>['state']['gam
   rawTotal: number;
   moodMult: number;
   finalTotal: number;
+  maintenance: number;
+  netTotal: number;
 } {
   const facilities: FacilityBreakdown[] = [];
   let rawTotal = 0;
@@ -50,15 +53,17 @@ function calcProductionBreakdown(game: ReturnType<typeof useStore>['state']['gam
     if (!def || def.category !== 'play' || def.basePower <= 0) continue;
     if (!f.managedBy) continue;
     const levelMult = 1 + (f.level - 1) * 0.3;
+    const angel = f.managedBy ? game.angels[f.managedBy] : null;
+    const angelMult = calcAngelMult(angel?.level ?? 1);
     const hamsterDetails: FacilityBreakdown['hamsterDetails'] = [];
     let subtotal = 0;
 
     for (const hId of Object.keys(f.occupants)) {
       const h = game.hamsters[hId];
       if (!h) continue;
-      const raw = (def.basePower + h.basePower) * levelMult;
+      const raw = (def.basePower + h.basePower) * levelMult * angelMult;
       subtotal += raw;
-      hamsterDetails.push({ name: h.name, base: h.basePower, facilityBase: def.basePower, levelMult });
+      hamsterDetails.push({ name: h.name, base: h.basePower, facilityBase: def.basePower, levelMult, angelMult });
     }
 
     if (hamsterDetails.length > 0) {
@@ -68,13 +73,23 @@ function calcProductionBreakdown(game: ReturnType<typeof useStore>['state']['gam
   }
 
   const moodMult = calcMoodMultiplier(game.happiness);
-  return { facilities, rawTotal, moodMult, finalTotal: Math.round(rawTotal * moodMult) };
+  const finalTotal = Math.round(rawTotal * moodMult);
+
+  // 维护费
+  let maintenance = 0;
+  for (const f of Object.values(game.facilities)) {
+    const def = getFacilityDef(f.type);
+    if (def) maintenance += def.maintenanceCost;
+  }
+
+  return { facilities, rawTotal, moodMult, finalTotal, maintenance, netTotal: finalTotal - maintenance };
 }
 
 const Overview: React.FC = () => {
   const { state, advanceTurnAndGenerate } = useStore();
   const [showDebug, setShowDebug] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showResourceHelp, setShowResourceHelp] = useState(false);
   const game = state.game;
   const production = calcProductionBreakdown(game);
   const pendingCount = Object.keys(game.pending_events).length;
@@ -82,6 +97,7 @@ const Overview: React.FC = () => {
   const facilityCount = Object.keys(game.facilities).length;
   const busyAngels = Object.values(game.angels).filter(a => a.assignedFacility).length;
   const unlockedAchievements = Object.keys(game.achievements).filter(k => game.achievements[k]);
+  const guideTips = getTabGuides(game).overview ?? [];
 
   return (
     <div>
@@ -101,11 +117,38 @@ const Overview: React.FC = () => {
         </div>
       )}
 
+      {/* 引导提示 */}
+      {guideTips.length > 0 && (
+        <div className="card" style={{ marginBottom: 12, background: '#eff6ff', borderColor: '#3b82f6' }}>
+          {guideTips.map((tip, i) => (
+            <div key={i} style={{ color: '#1e40af', fontSize: 13, lineHeight: 1.6, marginBottom: i < guideTips.length - 1 ? 4 : 0 }}>
+              {tip}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* 资源 */}
       <div className="card" style={{ marginBottom: 12 }}>
         <ResourceBar icon="⚡" label="能源" value={game.energy} max={game.energyCap} color="var(--color-energy)" />
         <ResourceBar icon="✨" label="星尘" value={game.stardust} color="var(--color-stardust)" />
         <ResourceBar icon="💛" label="心情" value={game.happiness} max={100} color="var(--color-happiness)" />
+        <div style={{ textAlign: 'right', marginTop: 2 }}>
+          <button
+            className="btn btn-sm"
+            style={{ fontSize: 10, color: '#9ca3af', padding: '0 4px' }}
+            onClick={() => setShowResourceHelp(!showResourceHelp)}
+          >
+            {showResourceHelp ? '收起说明' : '?'}
+          </button>
+        </div>
+        {showResourceHelp && (
+          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4, lineHeight: 1.6, borderTop: '1px solid #e5e7eb', paddingTop: 6 }}>
+            <div><b>⚡ 能源</b> — 鼠鼠快乐玩耍产生的电力，用于建造设施、维持运营</div>
+            <div><b>✨ 星尘</b> — 天使与星辰共鸣凝聚的稀有资源，用于天使升级</div>
+            <div><b>💛 心情</b> — 鼠鼠们的平均心情值，心情越高产能越高（70=基准，100=+20%）</div>
+          </div>
+        )}
       </div>
 
       {/* 产能预估 + 明细 */}
@@ -113,7 +156,12 @@ const Overview: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <span style={{ fontSize: 12, color: '#6b7280' }}>下回合预估 </span>
-            <span style={{ fontWeight: 600 }}>⚡ +{production.finalTotal}</span>
+            <span style={{ fontWeight: 600, color: production.netTotal >= 0 ? undefined : '#ef4444' }}>
+              ⚡ {production.netTotal >= 0 ? '+' : ''}{production.netTotal}
+            </span>
+            {production.maintenance > 0 && (
+              <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>(产{production.finalTotal} - 维护{production.maintenance})</span>
+            )}
             {Object.values(game.facilities).some(f => f.type === 'stardust_altar' && f.managedBy) && (
               <span style={{ marginLeft: 8, fontWeight: 600 }}>✨ +2</span>
             )}
@@ -136,7 +184,7 @@ const Overview: React.FC = () => {
                 <div style={{ color: '#374151', fontWeight: 500 }}>{fb.name}</div>
                 {fb.hamsterDetails.map((hd, j) => (
                   <div key={j} style={{ color: '#6b7280', paddingLeft: 8 }}>
-                    {hd.name}: (设施{hd.facilityBase} + 鼠鼠{hd.base}) × Lv.倍率{hd.levelMult.toFixed(1)} = ⚡{Math.round((hd.facilityBase + hd.base) * hd.levelMult)}
+                    {hd.name}: (设施{hd.facilityBase} + 鼠鼠{hd.base}) × Lv.{hd.levelMult.toFixed(1)}{hd.angelMult > 1 ? ` × 天使${hd.angelMult.toFixed(1)}` : ''} = ⚡{Math.round((hd.facilityBase + hd.base) * hd.levelMult * hd.angelMult)}
                   </div>
                 ))}
                 <div style={{ color: '#374151', paddingLeft: 8 }}>小计: ⚡{fb.subtotal}</div>
@@ -146,10 +194,31 @@ const Overview: React.FC = () => {
               <div style={{ color: '#6b7280' }}>
                 基础合计: ⚡{Math.round(production.rawTotal)} × 心情加成{(production.moodMult * 100).toFixed(0)}% = <b>⚡{production.finalTotal}</b>
               </div>
+              {production.maintenance > 0 && (
+                <div style={{ color: '#ef4444' }}>
+                  设施维护: -⚡{production.maintenance}
+                </div>
+              )}
+              <div style={{ fontWeight: 500 }}>
+                净收入: <b>⚡{production.netTotal}</b>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* 当前 Buff */}
+      {Object.keys(game.buffs).length > 0 && (
+        <div className="card" style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>当前效果</div>
+          {Object.entries(game.buffs).map(([id, buff]) => (
+            <div key={id} style={{ fontSize: 11, display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+              <span>{buff.description || buff.type}</span>
+              <span style={{ color: '#9ca3af' }}>{buff.duration}回合</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 待处理事件提示 */}
       {pendingCount > 0 && (

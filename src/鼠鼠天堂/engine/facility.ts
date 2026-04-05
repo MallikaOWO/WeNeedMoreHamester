@@ -69,6 +69,7 @@ export function buildFacility(state: GameState, facilityType: string): GameState
   return {
     ...state,
     energy: state.energy - def.cost.energy,
+    energyCap: state.energyCap + (def.energyCapBonus ?? 0),
     stardust: state.stardust - def.cost.stardust,
     facilities,
     angels,

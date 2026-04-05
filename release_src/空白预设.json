@@ -1,7 +1,7 @@
 {
   "max_context_unlocked": true,
   "openai_max_context": 2000000,
-  "openai_max_tokens": 30000,
+  "openai_max_tokens": 8192,
   "n": 1,
   "stream_openai": true,
   "temperature": 1,
@@ -167,7 +167,7 @@
     {
       "identifier": "4",
       "name": "摘要提示词",
-      "enabled": true,
+      "enabled": false,
       "injection_position": 0,
       "injection_depth": 4,
       "injection_order": 100,
@@ -232,7 +232,7 @@
         },
         {
           "identifier": "4",
-          "enabled": true
+          "enabled": false
         }
       ]
     }

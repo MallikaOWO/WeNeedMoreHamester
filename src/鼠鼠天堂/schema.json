@@ -3,7 +3,7 @@
   "type": "object",
   "properties": {
     "energy": {
-      "default": 50,
+      "default": 80,
       "type": "number"
     },
     "energyCap": {
@@ -213,6 +213,44 @@
         "type": "boolean"
       }
     },
+    "buffs": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "target": {
+            "default": "global",
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "event_flags": {
+      "default": {},
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
     "pending_events": {
       "default": {},
       "type": "object",
@@ -254,6 +292,30 @@
                 },
                 "is_silly": {
                   "type": "boolean"
+                },
+                "buff": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "default": "global",
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "number"
+                    },
+                    "duration": {
+                      "type": "number"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "flag_set": {
+                  "type": "string"
                 }
               }
             }

@@ -1,6 +1,9 @@
 <% var turn = getvar('stat_data.turn', {defaults: 0}); _%>
 <% var energy = getvar('stat_data.energy', {defaults: 50}); _%>
 <% var stardust = getvar('stat_data.stardust', {defaults: 0}); _%>
+<% var gamebuffs = getvar('stat_data.buffs', {defaults: {}}); _%>
+<% var eventFlags = getvar('stat_data.event_flags', {defaults: {}}); _%>
+<% var forceOpportunity = Object.values(gamebuffs).some(function(b) { return b.type === 'force_opportunity'; }); _%>
 <% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); _%>
 <% var hamsterCount = Object.keys(hamsters).length; _%>
 <% var proposal = getvar('stat_data.adoption_proposal', {defaults: null}); _%>
@@ -19,14 +22,7 @@
 _%>
 <event_instruction>
 
-<% if (turn <= 3 && hamsterCount === 0) { _%>
-新园长引导期。本回合生成：
-1. 一个日常事件：乐园初建的温馨氛围，天使们准备迎接第一只鼠鼠
-<% if (needAdoption) { _%>
-2. 一个收养事件：门口发现被遗弃的鼠鼠，必须通过 JSONPatch 设置 adoption_proposal
-<% } _%>
-
-<% } else if (turn <= 10) { _%>
+<% if (turn <= 10) { _%>
 新手期（回合<%= turn %>）。生成2个事件：
 - 以日常和机遇为主
 <% if (needAdoption) { _%>
@@ -64,6 +60,18 @@ _%>
 事件约束:
 - 每事件 2-3 选项，标注 energy_delta / stardust_delta / mood_delta
 - 至少一个稳妥正收益选项；恶搞选项 is_silly: true，扣除极小
+
+挑战事件（challenge）特殊要求:
+- 必须包含一个"冒险选项"：高收益（稳妥选项的2-3倍）但暗示风险
+- 必须包含一个"稳妥选项"：小正收益，无负面后果
+- 冒险选项的描述中应暗示可能的风险
+- 挑战事件的叙事要有紧张感和戏剧冲突
+
+稀有事件（special）特殊要求:
+- 给予远超日常的奖励（stardust +5~10 或 energy +30~50）
+- 叙事要有仪式感和惊喜感，展现乐园不寻常的一面
+- 可涉及天使的深层性格或过往，推进角色发展
+- 让玩家感到"这次事件很特别"
 <% if (energy > 0) { _%>
 - 能源负值上限: <%= Math.round(energy * 0.3) %>
 <% } _%>
@@ -72,5 +80,19 @@ _%>
 <% } _%>
 - 角色ID: 鼠鼠用变量中的ID（hamster_1 等），天使用 mianhua / luosi / xingxing / paofu
 - 涉及角色须写入 memory
+<% if (forceOpportunity) { _%>
+
+【好运连连】泡芙的四叶草正在发光！本回合至少一个事件必须为 opportunity 类型（机遇事件），且奖励高于平时。
+<% } _%>
+<%
+  var flagKeys = Object.keys(eventFlags);
+  if (flagKeys.length > 0) {
+_%>
+
+【事件链】以下标记已被设置，请根据标记生成后续事件：
+<% for (var i = 0; i < flagKeys.length; i++) { _%>
+- 标记 "<%= flagKeys[i] %>" 设置于回合 <%= eventFlags[flagKeys[i]] %>，请生成与此相关的后续事件
+<% } _%>
+<% } _%>
 
 </event_instruction>

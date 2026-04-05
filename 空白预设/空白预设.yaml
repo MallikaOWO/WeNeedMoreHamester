@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://cdn.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/preset.zh.json
 设置:
   上下文长度: 2000000
-  最大回复token数: 30000
+  最大回复token数: 8192
   流式传输: true
   温度: 1
   频率惩罚: 0
@@ -110,7 +110,7 @@
         - 收养相关指令见 <event_instruction>，仅在指令要求时生成
 
   - 名称: 摘要提示词
-    启用: true
+    启用: false
     角色: 系统
     内容: |-
       摘要规则（压缩历史对话时）:

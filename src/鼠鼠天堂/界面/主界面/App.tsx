@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { StoreProvider, useStore, type TabId } from './store';
+import { getTabGuides } from './guides';
 import Overview from './views/Overview';
 import Events from './views/Events';
 import Facilities from './views/Facilities';
@@ -35,6 +36,7 @@ const AppInner: React.FC = () => {
   }
 
   const ActiveView = TAB_COMPONENTS[state.tab];
+  const guides = getTabGuides(state.game);
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '8px 12px' }}>
@@ -45,8 +47,20 @@ const AppInner: React.FC = () => {
             key={t.id}
             className={`tab-btn ${state.tab === t.id ? 'active' : ''}`}
             onClick={() => dispatch({ type: 'SET_TAB', tab: t.id })}
+            style={{ position: 'relative' }}
           >
             {t.label}
+            {guides[t.id] && state.tab !== t.id && (
+              <span style={{
+                position: 'absolute',
+                top: 2,
+                right: 2,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: '#ef4444',
+              }} />
+            )}
           </button>
         ))}
       </div>

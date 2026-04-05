@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useStore } from '../store';
+import { getTabGuides } from '../guides';
 
 /** 资源变化标注 */
 const Delta: React.FC<{ value: number; icon: string }> = ({ value, icon }) => {
@@ -16,13 +17,23 @@ const Events: React.FC = () => {
   const proposal = state.game.adoption_proposal;
   const showProposal = proposal && !state.proposalDismissed;
   const hasContent = eventEntries.length > 0 || showProposal;
+  const tips = getTabGuides(state.game).events;
 
   if (!hasContent) {
     return (
-      <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 32 }}>
-        当前没有待处理事件
-        <div style={{ fontSize: 12, marginTop: 8 }}>
-          {state.generating ? '正在生成事件...' : '推进回合后会生成新事件'}
+      <div>
+        {tips && tips.length > 0 && (
+          <div className="card" style={{ marginBottom: 12, background: '#eff6ff', borderColor: '#3b82f6' }}>
+            {tips.map((tip, i) => (
+              <div key={i} style={{ color: '#1e40af', fontSize: 13, lineHeight: 1.6 }}>{tip}</div>
+            ))}
+          </div>
+        )}
+        <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 32 }}>
+          当前没有待处理事件
+          <div style={{ fontSize: 12, marginTop: 8 }}>
+            {state.generating ? '正在生成事件...' : '推进回合后会生成新事件'}
+          </div>
         </div>
       </div>
     );

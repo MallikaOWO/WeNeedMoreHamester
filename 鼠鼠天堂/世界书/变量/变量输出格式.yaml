@@ -33,6 +33,10 @@ _%>
       支持操作: replace / delta / insert / remove / move
       路径格式: path 必须以 / 开头（如 "/pending_events/evt_1a"，不是 "pending_events/evt_1a"）
       仅允许更新: pending_events, hamsters.*.memory, angels.*.memory<%= needAdoption ? ', adoption_proposal' : '' %>
+      事件选项可选字段:
+        buff: 持续效果（可选），格式 { "type": "类型", "target": "目标ID或global", "value": 数值, "duration": 持续回合, "description": "描述" }
+          type 可选值: production_boost / mood_regen / mood_drain / facility_down / stardust_bonus / stamina_save
+        flag_set: 事件链标记（可选），设置后下回合事件指令会检查此标记以生成后续事件
       格式: |-
         <UpdateVariable>
         <Analysis>$(IN ENGLISH, max 80 words: event count/types, characters involved<%= needAdoption ? ', adoption included' : '' %>)
@@ -64,7 +68,7 @@ _%>
     <JSONPatch>
     [
       { "op": "insert", "path": "/pending_events/evt_6a", "value": { "description": "布丁从跑轮上飞了出去！", "related_characters": "hamster_1,mianhua", "options": { "a": { "label": "赶紧冲过去接住她", "energy_delta": 5, "stardust_delta": 0, "mood_delta": 10, "mood_target": "hamster_1" }, "b": { "label": "让她体验飞翔的感觉", "energy_delta": 12, "stardust_delta": 0, "mood_delta": -5, "mood_target": "hamster_1" }, "c": { "label": "你也跳上跑轮一起转", "energy_delta": -3, "stardust_delta": 0, "mood_delta": 15, "is_silly": true } } } },
-      { "op": "insert", "path": "/pending_events/evt_6b", "value": { "description": "星星感应到地下有神秘光源", "related_characters": "xingxing,luosi", "options": { "a": { "label": "派螺丝去挖掘", "energy_delta": 0, "stardust_delta": 8, "mood_delta": 0 }, "b": { "label": "全员寻宝大会！", "energy_delta": -10, "stardust_delta": 3, "mood_delta": 10 }, "c": { "label": "假装没听到", "energy_delta": 0, "stardust_delta": 0, "mood_delta": 0 } } } },
+      { "op": "insert", "path": "/pending_events/evt_6b", "value": { "description": "星星感应到地下有神秘光源", "related_characters": "xingxing,luosi", "options": { "a": { "label": "派螺丝去挖掘", "energy_delta": 0, "stardust_delta": 8, "mood_delta": 0, "flag_set": "underground_glow" }, "b": { "label": "全员寻宝大会！", "energy_delta": -10, "stardust_delta": 3, "mood_delta": 10, "buff": { "type": "mood_regen", "target": "global", "value": 3, "duration": 2, "description": "寻宝大会的欢乐余韵" } }, "c": { "label": "假装没听到", "energy_delta": 0, "stardust_delta": 0, "mood_delta": 0 } } } },
       { "op": "insert", "path": "/hamsters/hamster_1/memory/t6_sneeze", "value": "从跑轮上飞出去了，主人接住了她" },
       { "op": "insert", "path": "/angels/xingxing/memory/t6_sense", "value": "感应到地下有神秘光源，向园长报告" },
       { "op": "insert", "path": "/angels/mianhua/memory/t6_worried", "value": "担心布丁受伤，跑去检查" }

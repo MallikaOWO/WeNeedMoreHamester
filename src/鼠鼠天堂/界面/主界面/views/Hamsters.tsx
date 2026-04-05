@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useStore } from '../store';
+import { getTabGuides } from '../guides';
 import { getFacilityDef, FACILITY_DEFS } from '../../../data/facilities';
 
 const MoodBar: React.FC<{ value: number }> = ({ value }) => (
@@ -29,12 +30,21 @@ const Hamsters: React.FC = () => {
   const [assignMode, setAssignMode] = useState<{ hamsterId: string; type: 'work' | 'living' } | null>(null);
 
   const hamsterEntries = Object.entries(game.hamsters);
+  const tips = getTabGuides(game).hamsters;
 
   if (hamsterEntries.length === 0) {
     return (
-      <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 32 }}>
-        乐园里还没有鼠鼠
-        <div style={{ fontSize: 12, marginTop: 8 }}>通过事件收养鼠鼠，或等待 AI 带来新朋友</div>
+      <div>
+        {tips && tips.length > 0 && (
+          <div className="card" style={{ marginBottom: 12, background: '#eff6ff', borderColor: '#3b82f6' }}>
+            {tips.map((tip, i) => (
+              <div key={i} style={{ color: '#1e40af', fontSize: 13, lineHeight: 1.6 }}>{tip}</div>
+            ))}
+          </div>
+        )}
+        <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 32 }}>
+          乐园里还没有鼠鼠
+        </div>
       </div>
     );
   }
@@ -59,6 +69,13 @@ const Hamsters: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {tips && tips.length > 0 && (
+        <div className="card" style={{ background: '#eff6ff', borderColor: '#3b82f6' }}>
+          {tips.map((tip, i) => (
+            <div key={i} style={{ color: '#1e40af', fontSize: 13, lineHeight: 1.6 }}>{tip}</div>
+          ))}
+        </div>
+      )}
       {hamsterEntries.map(([hId, h]) => {
         const expanded = expandedId === hId;
         const isAssigning = assignMode?.hamsterId === hId;

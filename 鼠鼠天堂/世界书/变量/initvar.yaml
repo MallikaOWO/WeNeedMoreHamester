@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../../schema.json
 # 鼠鼠天堂初始游戏状态（record-based，匹配 schema.ts）
-energy: 50
+energy: 80
 energyCap: 100
 stardust: 0
 turn: 0
@@ -73,5 +73,7 @@ angels:
         unlockedAtAngelLevel: 3
     memory: {}
 achievements: {}
+buffs: {}
+event_flags: {}
 pending_events: {}
 adoption_proposal: null

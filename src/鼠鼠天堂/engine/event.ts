@@ -75,6 +75,19 @@ export function applyEventChoice(
   // 从待处理事件中移除
   const { [eventId]: _, ...pending_events } = state.pending_events;
 
+  // 应用 buff（如果选项附带）
+  const buffs = { ...state.buffs };
+  if (option.buff && option.buff.type && option.buff.duration > 0) {
+    const buffId = `evt_${eventId}_${optionKey}`;
+    buffs[buffId] = { ...option.buff };
+  }
+
+  // 设置事件链标记
+  const event_flags = { ...state.event_flags };
+  if (option.flag_set) {
+    event_flags[option.flag_set] = state.turn;
+  }
+
   // 重新计算全局心情值（所有鼠鼠 mood 的平均值）
   const hamsterValues = Object.values(hamsters);
   const happiness = hamsterValues.length > 0
@@ -88,6 +101,8 @@ export function applyEventChoice(
     happiness,
     hamsters,
     pending_events,
+    buffs,
+    event_flags,
   };
 }
 

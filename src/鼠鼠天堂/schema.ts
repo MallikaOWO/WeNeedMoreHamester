@@ -16,6 +16,25 @@ const EventOptionSchema = z.object({
   mood_delta: z.coerce.number().prefault(0),
   mood_target: z.string().optional(),
   is_silly: z.boolean().prefault(false),
+  // 可选 buff：AI 可在选项中附加持续效果
+  buff: z.object({
+    type: z.string().prefault(''),
+    target: z.string().prefault('global'),
+    value: z.coerce.number().prefault(0),
+    duration: z.coerce.number().transform(v => Math.max(0, Math.round(v))).prefault(0),
+    description: z.string().prefault(''),
+  }).optional(),
+  // 可选事件链标记
+  flag_set: z.string().optional(),
+});
+
+// ── Buff 效果 [代码管理] ──
+const BuffSchema = z.object({
+  type: z.string().prefault(''),
+  target: z.string().prefault('global'),
+  value: z.coerce.number().prefault(0),
+  duration: z.coerce.number().transform(v => Math.max(0, Math.round(v))).prefault(0),
+  description: z.string().prefault(''),
 });
 
 // ── 游戏事件 [AI 生成] ──
@@ -84,7 +103,7 @@ const FacilitySchema = z.object({
 // ── 游戏全局状态 ──
 export const Schema = z.object({
   // [代码] 资源与进度
-  energy: z.coerce.number().transform(v => Math.max(0, Math.round(v))).prefault(50),
+  energy: z.coerce.number().transform(v => Math.max(0, Math.round(v))).prefault(80),
   energyCap: z.coerce.number().transform(v => Math.max(0, Math.round(v))).prefault(100),
   stardust: z.coerce.number().transform(v => Math.max(0, Math.round(v))).prefault(0),
   turn: z.coerce.number().transform(v => Math.max(0, Math.round(v))).prefault(0),
@@ -97,6 +116,12 @@ export const Schema = z.object({
 
   // [代码] 成就
   achievements: z.record(z.string(), z.boolean()).prefault({}),
+
+  // [代码] Buff 效果
+  buffs: z.record(z.string(), BuffSchema).prefault({}),
+
+  // [代码] 事件链标记（value = 设置时的 turn 号）
+  event_flags: z.record(z.string(), z.coerce.number().prefault(0)).prefault({}),
 
   // [AI] 事件与提案
   pending_events: z.record(z.string(), GameEventSchema).prefault({}),
@@ -112,3 +137,4 @@ export type SkillState = z.output<typeof SkillStateSchema>;
 export type GameEvent = z.output<typeof GameEventSchema>;
 export type EventOption = z.output<typeof EventOptionSchema>;
 export type AdoptionProposal = z.output<typeof AdoptionProposalSchema>;
+export type Buff = z.output<typeof BuffSchema>;

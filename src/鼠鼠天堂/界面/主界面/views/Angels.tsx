@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useStore } from '../store';
+import { getTabGuides } from '../guides';
 import { ANGEL_PRESETS } from '../../../data/angels';
 import { getSkillDef } from '../../../data/skills';
 import { getFacilityDef } from '../../../data/facilities';
@@ -21,8 +22,17 @@ const Angels: React.FC = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [skillTarget, setSkillTarget] = useState<{ angelId: string; skillId: string } | null>(null);
 
+  const tips = getTabGuides(game).angels;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {tips && tips.length > 0 && (
+        <div className="card" style={{ background: '#eff6ff', borderColor: '#3b82f6' }}>
+          {tips.map((tip, i) => (
+            <div key={i} style={{ color: '#1e40af', fontSize: 13, lineHeight: 1.6 }}>{tip}</div>
+          ))}
+        </div>
+      )}
       {Object.entries(game.angels).map(([angelId, angel]) => {
         const expanded = expandedId === angelId;
         const preset = ANGEL_PRESETS.find(p => p.id === angelId);
@@ -56,7 +66,7 @@ const Angels: React.FC = () => {
             )}
 
             {/* 技能列表（总是显示） */}
-            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {Object.entries(angel.skills).map(([skId, sk]) => {
                 const def = getSkillDef(skId);
                 const locked = angel.level < sk.unlockedAtAngelLevel;
@@ -66,27 +76,30 @@ const Angels: React.FC = () => {
                 const isSelectingTarget = skillTarget?.angelId === angelId && skillTarget?.skillId === skId;
 
                 return (
-                  <button
-                    key={skId}
-                    className="btn btn-sm"
-                    disabled={!canUse}
-                    style={{
-                      opacity: locked ? 0.3 : 1,
-                      position: 'relative',
-                    }}
-                    title={locked ? `Lv.${sk.unlockedAtAngelLevel} 解锁` : onCooldown ? `冷却中 (${sk.cooldownLeft}回合)` : def?.description}
-                    onClick={() => {
-                      if (needsTarget && Object.keys(game.hamsters).length > 0) {
-                        setSkillTarget(isSelectingTarget ? null : { angelId, skillId: skId });
-                      } else {
-                        dispatch({ type: 'USE_SKILL', angelId, skillId: skId });
-                      }
-                    }}
-                  >
-                    {def?.name ?? skId}
-                    {onCooldown && <span style={{ fontSize: 10, marginLeft: 2 }}>({sk.cooldownLeft})</span>}
-                    {locked && <span style={{ fontSize: 10, marginLeft: 2 }}>🔒</span>}
-                  </button>
+                  <div key={skId} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <button
+                      className="btn btn-sm"
+                      disabled={!canUse}
+                      style={{
+                        opacity: locked ? 0.3 : 1,
+                        flexShrink: 0,
+                      }}
+                      onClick={() => {
+                        if (needsTarget && Object.keys(game.hamsters).length > 0) {
+                          setSkillTarget(isSelectingTarget ? null : { angelId, skillId: skId });
+                        } else {
+                          dispatch({ type: 'USE_SKILL', angelId, skillId: skId });
+                        }
+                      }}
+                    >
+                      {def?.name ?? skId}
+                      {onCooldown && <span style={{ fontSize: 10, marginLeft: 2 }}>({sk.cooldownLeft})</span>}
+                      {locked && <span style={{ fontSize: 10, marginLeft: 2 }}>🔒</span>}
+                    </button>
+                    <span style={{ fontSize: 11, color: locked ? '#d1d5db' : '#9ca3af' }}>
+                      {locked ? `Lv.${sk.unlockedAtAngelLevel} 解锁` : def?.description}
+                    </span>
+                  </div>
                 );
               })}
             </div>

@@ -5,10 +5,10 @@ import { getSkillDef } from '../data/skills';
 
 /** 天使升级所需星尘（按等级递增） */
 const LEVEL_UP_COST: Record<number, number> = {
-  1: 10,  // Lv.1 → Lv.2
-  2: 25,  // Lv.2 → Lv.3
-  3: 50,  // Lv.3 → Lv.4
-  4: 100, // Lv.4 → Lv.5
+  1: 15,   // Lv.1 → Lv.2
+  2: 40,   // Lv.2 → Lv.3
+  3: 80,   // Lv.3 → Lv.4
+  4: 150,  // Lv.4 → Lv.5
 };
 
 /** 检查天使是否可以升级 */
@@ -89,6 +89,7 @@ export function useSkill(
   let hamsters = { ...state.hamsters };
   let energy = state.energy;
   let stardust = state.stardust;
+  const buffs = { ...state.buffs };
 
   // 应用技能效果
   switch (def.effectType) {
@@ -110,11 +111,27 @@ export function useSkill(
       break;
     }
     case 'boost_production': {
-      // 产能翻倍效果在 turn.ts 结算时由状态标记处理（简化）
+      // 能源过载：所管理设施下回合产能翻倍 → 用 buff 实现
+      if (angel.assignedFacility) {
+        buffs[`skill_${skillId}_${state.turn}`] = {
+          type: 'production_boost',
+          target: angel.assignedFacility,
+          value: 100, // +100% = 翻倍
+          duration: 1,
+          description: `${angel.name}的能源过载 — 设施产能翻倍`,
+        };
+      }
       break;
     }
     case 'boost_stardust': {
-      // 星尘收入加成（简化）
+      // 星尘感应：本回合星尘收入 +50% → 加 buff
+      buffs[`skill_${skillId}_${state.turn}`] = {
+        type: 'stardust_bonus',
+        target: 'global',
+        value: Math.max(1, Math.round(stardust * 0.5)), // 至少+1
+        duration: 1,
+        description: `${angel.name}的星尘感应 — 星尘收入增加`,
+      };
       break;
     }
     case 'convert_resource': {
@@ -126,12 +143,49 @@ export function useSkill(
       break;
     }
     case 'repair_facility': {
+      // 紧急维修：移除目标设施的 facility_down buff，或临时增产
+      let repaired = false;
+      if (angel.assignedFacility) {
+        // 移除该设施相关的 facility_down buff
+        for (const [bId, b] of Object.entries(buffs)) {
+          if (b.type === 'facility_down' && b.target === angel.assignedFacility) {
+            delete buffs[bId];
+            repaired = true;
+          }
+        }
+        // 无故障时：设施临时增产 50%
+        if (!repaired) {
+          buffs[`skill_${skillId}_${state.turn}`] = {
+            type: 'production_boost',
+            target: angel.assignedFacility,
+            value: 50,
+            duration: 1,
+            description: `${angel.name}的精密调校 — 设施增产50%`,
+          };
+        }
+      }
       break;
     }
     case 'preview_event': {
+      // 幸运预感：添加预览 buff（前端可读取显示提示）
+      buffs[`skill_${skillId}_${state.turn}`] = {
+        type: 'preview_event',
+        target: 'global',
+        value: 1,
+        duration: 1,
+        description: '泡芙的耳朵抖了抖："我闻到了下回合的气息~"',
+      };
       break;
     }
     case 'force_event_type': {
+      // 好运连连：下回合强制至少一个 opportunity 事件
+      buffs[`skill_${skillId}_${state.turn}`] = {
+        type: 'force_opportunity',
+        target: 'global',
+        value: 1,
+        duration: 1,
+        description: '泡芙的四叶草发光了 — 下回合必出机遇事件',
+      };
       break;
     }
   }
@@ -149,7 +203,7 @@ export function useSkill(
   };
 
   return {
-    state: { ...state, energy, stardust, hamsters, angels },
+    state: { ...state, energy, stardust, hamsters, angels, buffs },
     success: true,
   };
 }

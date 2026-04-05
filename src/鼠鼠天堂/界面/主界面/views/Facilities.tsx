@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useStore } from '../store';
+import { getTabGuides } from '../guides';
 import { FACILITY_DEFS, getFacilityDef, getUpgradeCost } from '../../../data/facilities';
 import { canBuild, canUpgrade } from '../../../engine/facility';
 
@@ -11,9 +12,19 @@ const Facilities: React.FC = () => {
   const [showBuild, setShowBuild] = useState(false);
 
   const facilityEntries = Object.entries(game.facilities);
+  const tips = getTabGuides(game).facilities;
 
   return (
     <div>
+      {/* 引导提示 */}
+      {tips && tips.length > 0 && (
+        <div className="card" style={{ marginBottom: 12, background: '#eff6ff', borderColor: '#3b82f6' }}>
+          {tips.map((tip, i) => (
+            <div key={i} style={{ color: '#1e40af', fontSize: 13, lineHeight: 1.6, marginBottom: i < tips.length - 1 ? 4 : 0 }}>{tip}</div>
+          ))}
+        </div>
+      )}
+
       {/* 已建设施 */}
       {facilityEntries.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 24, marginBottom: 12 }}>
@@ -117,8 +128,11 @@ const Facilities: React.FC = () => {
                     >
                       <div>
                         <span style={{ fontWeight: 500 }}>{def.name}</span>
+                        {def.description && (
+                          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{def.description}</div>
+                        )}
                         <div style={{ fontSize: 11, color: '#6b7280' }}>
-                          容量:{def.capacity} | ⚡{def.cost.energy}{def.cost.stardust > 0 ? ` ✨${def.cost.stardust}` : ''} | 天使Lv.{def.requiredAngelLevel}+
+                          {def.capacity > 0 && `容量:${def.capacity} | `}⚡{def.cost.energy}{def.cost.stardust > 0 ? ` ✨${def.cost.stardust}` : ''} | 维护⚡{def.maintenanceCost}/回合 | 天使Lv.{def.requiredAngelLevel}+
                           {def.specialEffect && ` | ${def.specialEffect}`}
                         </div>
                       </div>
