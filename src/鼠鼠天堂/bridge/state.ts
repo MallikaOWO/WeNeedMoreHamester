@@ -91,15 +91,17 @@ export function getStateForPrompt(state: GameState): string {
   // 天使简表
   lines.push('【鼠天使】');
   for (const [aId, a] of Object.entries(state.angels)) {
-    const facilityType = a.assignedFacility ? state.facilities[a.assignedFacility]?.type : null;
-    const facilityName = facilityType
-      ? (FACILITY_DEFS.find(d => d.type === facilityType)?.name ?? facilityType)
-      : '空闲';
+    const domainFacilities = Object.entries(state.facilities)
+      .filter(([, f]) => f.managedBy === aId)
+      .map(([, f]) => FACILITY_DEFS.find(d => d.type === f.type)?.name ?? f.type);
+    const facilityLabel = domainFacilities.length > 0
+      ? domainFacilities.join('+')
+      : '无设施';
     const skillInfo = Object.entries(a.skills)
       .filter(([, s]) => a.level >= s.unlockedAtAngelLevel)
       .map(([sId, s]) => `${sId}${s.cooldownLeft > 0 ? `(CD:${s.cooldownLeft})` : ''}`)
       .join(', ');
-    lines.push(`  ${a.name}[${aId}] Lv.${a.level} 管理:${facilityName} 技能:[${skillInfo}]`);
+    lines.push(`  ${a.name}[${aId}] Lv.${a.level} 管理:${facilityLabel} 技能:[${skillInfo}]`);
   }
 
   // 设施简表

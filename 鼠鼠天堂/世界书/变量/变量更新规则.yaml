@@ -54,7 +54,7 @@ _%>
   _禁止更新:
     - energy / energyCap / stardust / happiness / turn — 代码结算
     - hamsters.*.mood / stamina / livingAt / workingAt — 代码管理
-    - angels.*.level / exp / skills / assignedFacility — 代码管理
+    - angels.*.level / exp / skills — 代码管理
     - facilities / achievements — 代码管理
 <% if (!needAdoption) { _%>
     - adoption_proposal — 本回合不生成收养提案

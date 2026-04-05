@@ -36,10 +36,10 @@ const Angels: React.FC = () => {
       {Object.entries(game.angels).map(([angelId, angel]) => {
         const expanded = expandedId === angelId;
         const preset = ANGEL_PRESETS.find(p => p.id === angelId);
-        const facilityType = angel.assignedFacility ? game.facilities[angel.assignedFacility]?.type : null;
-        const facilityName = facilityType
-          ? (getFacilityDef(facilityType)?.name ?? '未知')
-          : '空闲';
+        const domainFacilities = Object.entries(game.facilities).filter(([, f]) => f.managedBy === angelId);
+        const facilityLabel = domainFacilities.length > 0
+          ? `管理 ${domainFacilities.length} 个设施`
+          : '无设施';
         const levelCheck = canLevelUp(game, angelId);
 
         return (
@@ -55,7 +55,7 @@ const Angels: React.FC = () => {
                   Lv.{angel.level} | {DOMAIN_LABELS[angel.manageDomain] ?? angel.manageDomain}
                 </span>
               </div>
-              <span style={{ fontSize: 12, color: '#9ca3af' }}>{facilityName}</span>
+              <span style={{ fontSize: 12, color: '#9ca3af' }}>{facilityLabel}</span>
             </div>
 
             {/* 描述 */}
@@ -72,7 +72,9 @@ const Angels: React.FC = () => {
                 const locked = angel.level < sk.unlockedAtAngelLevel;
                 const onCooldown = sk.cooldownLeft > 0;
                 const canUse = !locked && !onCooldown;
-                const needsTarget = def?.effectType === 'heal_mood';
+                const needsHamsterTarget = def?.effectType === 'heal_mood';
+                const needsFacilityTarget = def?.effectType === 'boost_production' || def?.effectType === 'repair_facility';
+                const needsTarget = needsHamsterTarget || needsFacilityTarget;
                 const isSelectingTarget = skillTarget?.angelId === angelId && skillTarget?.skillId === skId;
 
                 return (
@@ -85,7 +87,9 @@ const Angels: React.FC = () => {
                         flexShrink: 0,
                       }}
                       onClick={() => {
-                        if (needsTarget && Object.keys(game.hamsters).length > 0) {
+                        if (needsHamsterTarget && Object.keys(game.hamsters).length > 0) {
+                          setSkillTarget(isSelectingTarget ? null : { angelId, skillId: skId });
+                        } else if (needsFacilityTarget && domainFacilities.length > 0) {
                           setSkillTarget(isSelectingTarget ? null : { angelId, skillId: skId });
                         } else {
                           dispatch({ type: 'USE_SKILL', angelId, skillId: skId });
@@ -105,23 +109,44 @@ const Angels: React.FC = () => {
             </div>
 
             {/* 技能目标选择 */}
-            {skillTarget?.angelId === angelId && (
-              <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                <span style={{ fontSize: 12, color: '#6b7280', lineHeight: '24px' }}>选择目标:</span>
-                {Object.entries(game.hamsters).map(([hId, h]) => (
-                  <button
-                    key={hId}
-                    className="btn btn-sm"
-                    onClick={() => {
-                      dispatch({ type: 'USE_SKILL', angelId, skillId: skillTarget.skillId, targetId: hId });
-                      setSkillTarget(null);
-                    }}
-                  >
-                    {h.name} (💛{h.mood})
-                  </button>
-                ))}
-              </div>
-            )}
+            {skillTarget?.angelId === angelId && (() => {
+              const skDef = getSkillDef(skillTarget.skillId);
+              const isFacilitySkill = skDef?.effectType === 'boost_production' || skDef?.effectType === 'repair_facility';
+              return (
+                <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  <span style={{ fontSize: 12, color: '#6b7280', lineHeight: '24px' }}>选择目标:</span>
+                  {isFacilitySkill
+                    ? domainFacilities.map(([fId, f]) => {
+                        const fDef = getFacilityDef(f.type);
+                        return (
+                          <button
+                            key={fId}
+                            className="btn btn-sm"
+                            onClick={() => {
+                              dispatch({ type: 'USE_SKILL', angelId, skillId: skillTarget.skillId, targetId: fId });
+                              setSkillTarget(null);
+                            }}
+                          >
+                            {fDef?.name ?? f.type} Lv.{f.level}
+                          </button>
+                        );
+                      })
+                    : Object.entries(game.hamsters).map(([hId, h]) => (
+                        <button
+                          key={hId}
+                          className="btn btn-sm"
+                          onClick={() => {
+                            dispatch({ type: 'USE_SKILL', angelId, skillId: skillTarget.skillId, targetId: hId });
+                            setSkillTarget(null);
+                          }}
+                        >
+                          {h.name} (💛{h.mood})
+                        </button>
+                      ))
+                  }
+                </div>
+              );
+            })()}
 
             {/* 展开详情 */}
             {expanded && (

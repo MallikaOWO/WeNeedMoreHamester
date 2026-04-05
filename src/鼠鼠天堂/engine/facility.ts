@@ -36,25 +36,17 @@ export function buildFacility(state: GameState, facilityType: string): GameState
   const def = getFacilityDef(facilityType)!;
   const id = nextFacilityId(facilityType);
 
-  // 自动分配对应方向的天使（如果空闲）
+  // 按领域自动分配管理天使（一个天使管理其领域的所有设施）
   let managedBy: string | null = null;
-  if (def.manageDomain === 'any') {
-    // 功能设施：任意空闲天使均可管理
+  if (def.manageDomain !== 'any') {
     for (const [aId, a] of Object.entries(state.angels)) {
-      if (!a.assignedFacility) {
-        managedBy = aId;
-        break;
-      }
-    }
-  } else {
-    // 专属方向设施：只匹配对应方向的天使
-    for (const [aId, a] of Object.entries(state.angels)) {
-      if (a.manageDomain === def.manageDomain && !a.assignedFacility) {
+      if (a.manageDomain === def.manageDomain) {
         managedBy = aId;
         break;
       }
     }
   }
+  // manageDomain === 'any' 的功能设施无需专人管理，自动运作
 
   const newFacility: Facility = {
     type: facilityType,
@@ -67,21 +59,12 @@ export function buildFacility(state: GameState, facilityType: string): GameState
 
   const facilities = { ...state.facilities, [id]: newFacility };
 
-  const angels = managedBy
-    ? Object.fromEntries(
-        Object.entries(state.angels).map(([aId, a]) =>
-          aId === managedBy ? [aId, { ...a, assignedFacility: id }] : [aId, a]
-        )
-      )
-    : state.angels;
-
   return {
     ...state,
     energy: state.energy - def.cost.energy,
     energyCap: state.energyCap + (def.energyCapBonus ?? 0),
     stardust: state.stardust - def.cost.stardust,
     facilities,
-    angels,
   };
 }
 
@@ -98,12 +81,15 @@ export function canUpgrade(state: GameState, facilityId: string): { ok: boolean;
   if (state.energy < cost.energy) return { ok: false, reason: '能源不足' };
   if (state.stardust < cost.stardust) return { ok: false, reason: '星尘不足' };
 
-  // 管理天使等级检查：升级后的设施等级不能超过管理天使的等级
+  // 天使等级检查：领域天使等级 >= 设施目标等级
   const nextLevel = facility.level + 1;
-  if (facility.managedBy) {
-    const angel = state.angels[facility.managedBy];
-    if (angel && angel.level < nextLevel) {
-      return { ok: false, reason: `需要管理天使达到Lv.${nextLevel}` };
+  if (def.manageDomain !== 'any') {
+    const domainAngel = Object.values(state.angels).find(a => a.manageDomain === def.manageDomain);
+    if (!domainAngel) {
+      return { ok: false, reason: '没有对应领域的天使' };
+    }
+    if (domainAngel.level < nextLevel) {
+      return { ok: false, reason: `需要${domainAngel.name}达到Lv.${nextLevel}` };
     }
   }
 
@@ -135,34 +121,38 @@ export function upgradeFacility(state: GameState, facilityId: string): GameState
   };
 }
 
-/** 分配天使管理设施 */
-export function assignAngelToFacility(state: GameState, angelId: string, facilityId: string): GameState {
-  const angel = state.angels[angelId];
-  const facility = state.facilities[facilityId];
-  if (!angel || !facility) return state;
+/** 查找管理某设施的领域天使 */
+export function getDomainAngel(state: GameState, facilityType: string): { id: string; angel: GameState['angels'][string] } | null {
+  const def = getFacilityDef(facilityType);
+  if (!def || def.manageDomain === 'any') return null;
+  for (const [aId, a] of Object.entries(state.angels)) {
+    if (a.manageDomain === def.manageDomain) return { id: aId, angel: a };
+  }
+  return null;
+}
 
-  const def = getFacilityDef(facility.type);
-  if (!def) return state;
-
-  // 检查管理方向匹配
-  if (def.manageDomain !== 'any' && angel.manageDomain !== def.manageDomain) return state;
-  // 检查天使等级
-  if (angel.level < facility.requiredAngelLevel) return state;
-
-  // 先解除天使原先管理的设施，再分配新设施
+/** 修复旧存档：确保所有设施的 managedBy 与领域天使匹配 */
+export function fixupFacilityManagers(state: GameState): GameState {
+  let changed = false;
   const facilities = { ...state.facilities };
   for (const [fId, f] of Object.entries(facilities)) {
-    if (fId === facilityId) {
-      facilities[fId] = { ...f, managedBy: angelId };
-    } else if (f.managedBy === angelId) {
-      facilities[fId] = { ...f, managedBy: null };
+    const def = getFacilityDef(f.type);
+    if (!def) continue;
+    if (def.manageDomain === 'any') {
+      // 'any' 设施无需管理者
+      if (f.managedBy) {
+        facilities[fId] = { ...f, managedBy: null };
+        changed = true;
+      }
+    } else {
+      // 领域设施：确保 managedBy 指向正确的领域天使
+      const domainAngel = getDomainAngel(state, f.type);
+      const correctManager = domainAngel?.id ?? null;
+      if (f.managedBy !== correctManager) {
+        facilities[fId] = { ...f, managedBy: correctManager };
+        changed = true;
+      }
     }
   }
-
-  const angels = {
-    ...state.angels,
-    [angelId]: { ...angel, assignedFacility: facilityId },
-  };
-
-  return { ...state, facilities, angels };
+  return changed ? { ...state, facilities } : state;
 }

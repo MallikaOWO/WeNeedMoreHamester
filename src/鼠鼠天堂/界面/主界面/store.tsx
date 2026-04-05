@@ -7,7 +7,7 @@ import { loadGameState, saveGameState, ensurePersistenceLayer } from '../../brid
 import { createInitialGameState } from '../../data/init';
 
 // engine imports
-import { buildFacility, upgradeFacility, assignAngelToFacility } from '../../engine/facility';
+import { buildFacility, upgradeFacility } from '../../engine/facility';
 import { adoptHamster, assignToWork, stopWorking, changeLiving } from '../../engine/hamster';
 import { levelUpAngel, useSkill, tickCooldowns } from '../../engine/angel';
 import { applyEventChoice, rollEventSlots } from '../../engine/event';
@@ -46,7 +46,6 @@ export type Action =
   | { type: 'SET_TAB'; tab: TabId }
   | { type: 'BUILD_FACILITY'; facilityType: string }
   | { type: 'UPGRADE_FACILITY'; facilityId: string }
-  | { type: 'ASSIGN_ANGEL'; angelId: string; facilityId: string }
   | { type: 'ADOPT_HAMSTER'; hamsterId: string; data: Omit<Hamster, 'livingAt' | 'workingAt' | 'memory' | 'mood' | 'stamina'> }
   | { type: 'ASSIGN_WORK'; hamsterId: string; facilityId: string }
   | { type: 'STOP_WORKING'; hamsterId: string }
@@ -93,12 +92,6 @@ function reducer(state: AppState, action: Action): AppState {
         game: newGame,
         log: addLog(state, `升级了设施: ${action.facilityId}`, 'upgrade'),
       };
-    }
-
-    case 'ASSIGN_ANGEL': {
-      const newGame = assignAngelToFacility(state.game, action.angelId, action.facilityId);
-      if (newGame === state.game) return state;
-      return { ...state, game: newGame };
     }
 
     case 'ADOPT_HAMSTER': {

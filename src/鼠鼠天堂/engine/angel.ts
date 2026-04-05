@@ -111,11 +111,11 @@ export function useSkill(
       break;
     }
     case 'boost_production': {
-      // 能源过载：所管理设施下回合产能翻倍 → 用 buff 实现
-      if (angel.assignedFacility) {
+      // 能源过载：目标设施下回合产能翻倍 → 用 buff 实现
+      if (targetId && state.facilities[targetId]) {
         buffs[`skill_${skillId}_${state.turn}`] = {
           type: 'production_boost',
-          target: angel.assignedFacility,
+          target: targetId,
           value: 100, // +100% = 翻倍
           duration: 1,
           description: `${angel.name}的能源过载 — 设施产能翻倍`,
@@ -144,20 +144,18 @@ export function useSkill(
     }
     case 'repair_facility': {
       // 紧急维修：移除目标设施的 facility_down buff，或临时增产
-      let repaired = false;
-      if (angel.assignedFacility) {
-        // 移除该设施相关的 facility_down buff
+      if (targetId && state.facilities[targetId]) {
+        let repaired = false;
         for (const [bId, b] of Object.entries(buffs)) {
-          if (b.type === 'facility_down' && b.target === angel.assignedFacility) {
+          if (b.type === 'facility_down' && b.target === targetId) {
             delete buffs[bId];
             repaired = true;
           }
         }
-        // 无故障时：设施临时增产 50%
         if (!repaired) {
           buffs[`skill_${skillId}_${state.turn}`] = {
             type: 'production_boost',
-            target: angel.assignedFacility,
+            target: targetId,
             value: 50,
             duration: 1,
             description: `${angel.name}的精密调校 — 设施增产50%`,

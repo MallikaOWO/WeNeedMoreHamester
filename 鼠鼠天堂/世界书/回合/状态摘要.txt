@@ -17,13 +17,19 @@
 鼠居民: 无
 <% } _%>
 
+<% var facilities = getvar('stat_data.facilities', {defaults: {}}); _%>
 <% var angels = getvar('stat_data.angels', {defaults: {}}); _%>
 鼠天使:
 <% Object.keys(angels).forEach(function(aId) { var a = angels[aId]; _%>
-  <%= a.name %>[<%= aId %>] Lv.<%= a.level %> <%= a.assignedFacility ? '值班中' : '空闲' %>
+<%
+    var domainCount = 0;
+    Object.keys(facilities).forEach(function(fId) {
+      if (facilities[fId].managedBy === aId) domainCount++;
+    });
+  _%>
+  <%= a.name %>[<%= aId %>] Lv.<%= a.level %> 管理<%= domainCount %>个设施
 <% }); _%>
 
-<% var facilities = getvar('stat_data.facilities', {defaults: {}}); _%>
 <% var fKeys = Object.keys(facilities); _%>
 <% if (fKeys.length > 0) { _%>
 设施(<%= fKeys.length %>个):

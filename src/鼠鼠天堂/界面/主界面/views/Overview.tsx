@@ -83,6 +83,20 @@ function calcMoodForecast(game: ReturnType<typeof useStore>['state']['game']): M
       }
     }
 
+    // Buff 效果：mood_regen / mood_drain
+    for (const buff of Object.values(game.buffs)) {
+      if (buff.type === 'mood_regen') {
+        if (buff.target === 'global' || buff.target === Object.entries(game.hamsters).find(([, v]) => v === h)?.[0]) {
+          delta += buff.value;
+        }
+      }
+      if (buff.type === 'mood_drain') {
+        if (buff.target === Object.entries(game.hamsters).find(([, v]) => v === h)?.[0]) {
+          delta -= buff.value;
+        }
+      }
+    }
+
     const predicted = Math.max(0, Math.min(100, h.mood + delta));
     details.push({ name: h.name, current: h.mood, delta, predicted });
   }
@@ -161,7 +175,9 @@ const Overview: React.FC = () => {
   const pendingCount = Object.keys(game.pending_events).length;
   const hamsterCount = Object.keys(game.hamsters).length;
   const facilityCount = Object.keys(game.facilities).length;
-  const busyAngels = Object.values(game.angels).filter(a => a.assignedFacility).length;
+  const busyAngels = Object.entries(game.angels).filter(([aId]) =>
+    Object.values(game.facilities).some(f => f.managedBy === aId)
+  ).length;
   const unlockedAchievements = Object.keys(game.achievements).filter(k => game.achievements[k]);
   const guideTips = getTabGuides(game).overview ?? [];
 
@@ -296,12 +312,23 @@ const Overview: React.FC = () => {
       {Object.keys(game.buffs).length > 0 && (
         <div className="card" style={{ marginBottom: 12 }}>
           <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>当前效果</div>
-          {Object.entries(game.buffs).map(([id, buff]) => (
-            <div key={id} style={{ fontSize: 11, display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-              <span>{buff.description || buff.type}</span>
-              <span style={{ color: '#9ca3af' }}>{buff.duration}回合</span>
-            </div>
-          ))}
+          {Object.entries(game.buffs).map(([id, buff]) => {
+            // 生成机制说明
+            let mechanic = '';
+            if (buff.type === 'mood_regen') mechanic = `💛+${buff.value}/回合${buff.target === 'global' ? '(全体)' : ''}`;
+            else if (buff.type === 'mood_drain') mechanic = `💛-${buff.value}/回合`;
+            else if (buff.type === 'production_boost') mechanic = `⚡产能+${buff.value}%`;
+            else if (buff.type === 'facility_down') mechanic = `⚡产能-50%`;
+            else if (buff.type === 'stardust_bonus') mechanic = `✨+${buff.value}`;
+            else if (buff.type === 'lucky_guard') mechanic = '下回合事件含高收益选项';
+            else if (buff.type === 'force_opportunity') mechanic = '下回合必出机遇事件';
+            return (
+              <div key={id} style={{ fontSize: 11, display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                <span>{buff.description || buff.type}{mechanic && <span style={{ color: '#6b7280', marginLeft: 4 }}>({mechanic})</span>}</span>
+                <span style={{ color: '#9ca3af', flexShrink: 0, marginLeft: 8 }}>{buff.duration}回合</span>
+              </div>
+            );
+          })}
         </div>
       )}
 

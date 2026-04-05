@@ -2,6 +2,7 @@
 
 import type { GameState, Facility, Hamster } from '../schema';
 import { getFacilityDef } from '../data/facilities';
+import { fixupFacilityManagers } from './facility';
 import { getPersonalityDef } from '../data/personalities';
 
 /**
@@ -71,6 +72,9 @@ const MOOD_COST_PER_TURN = 8;
 
 /** 结算一个回合 */
 export function settleTurn(state: GameState): GameState {
+  // 修复旧存档：确保设施 managedBy 与领域天使一致
+  state = fixupFacilityManagers(state);
+
   let energy = state.energy;
   const hamsters: Record<string, Hamster> = {};
   for (const [id, h] of Object.entries(state.hamsters)) {
@@ -157,7 +161,7 @@ export function settleTurn(state: GameState): GameState {
   }
 
   // ── 3. 休息中鼠鼠恢复体力（没有在工作的鼠鼠） ──
-  const hasCanteen = Object.values(facilities).some(f => f.type === 'canteen' && f.managedBy);
+  const hasCanteen = Object.values(facilities).some(f => f.type === 'canteen');
   const restoreAmount = hasCanteen
     ? Math.round(STAMINA_RESTORE_BASE * 1.5)
     : STAMINA_RESTORE_BASE;

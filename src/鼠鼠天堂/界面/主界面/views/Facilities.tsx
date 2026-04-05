@@ -83,7 +83,7 @@ const Facilities: React.FC = () => {
 
                 {/* 升级按钮 */}
                 {f.level < 3 && (
-                  <div style={{ marginTop: 6 }}>
+                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <button
                       className="btn btn-sm"
                       disabled={!upgradeCheck.ok}
@@ -92,6 +92,9 @@ const Facilities: React.FC = () => {
                     >
                       升级 {cost && `(⚡${cost.energy}${cost.stardust > 0 ? ` ✨${cost.stardust}` : ''})`}
                     </button>
+                    {!upgradeCheck.ok && upgradeCheck.reason && (
+                      <span style={{ fontSize: 11, color: '#ef4444' }}>{upgradeCheck.reason}</span>
+                    )}
                   </div>
                 )}
               </div>
