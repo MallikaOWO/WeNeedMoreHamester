@@ -19,5 +19,7 @@ export function createInitialGameState(): GameState {
     event_flags: {},
     pending_events: {},
     adoption_proposal: null,
+    narrative_summary: '',
+    last_summary_turn: 0,
   };
 }

@@ -353,6 +353,12 @@
           "type": "null"
         }
       ]
+    },
+    "narrative_summary": {
+      "type": "string"
+    },
+    "last_summary_turn": {
+      "type": "number"
     }
   }
 }

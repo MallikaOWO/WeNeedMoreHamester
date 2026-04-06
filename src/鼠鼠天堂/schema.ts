@@ -127,6 +127,10 @@ export const Schema = z.object({
   // [AI] 事件与提案
   pending_events: z.record(z.string(), GameEventSchema).prefault({}),
   adoption_proposal: AdoptionProposalSchema.nullable().prefault(null),
+
+  // [代码] 叙事总结
+  narrative_summary: z.string().prefault(''),
+  last_summary_turn: z.coerce.number().transform(v => Math.max(0, Math.round(v))).prefault(0),
 });
 
 // 导出推断类型

@@ -15,6 +15,7 @@ import { levelUpAngel, useSkill, tickCooldowns } from '../../engine/angel';
 import { applyEventChoice, rollEventSlots } from '../../engine/event';
 import { settleTurn } from '../../engine/turn';
 import { checkAchievements } from '../../engine/achievement';
+import { extractNarratives, buildSummarizationPrompt, parseSummaryResponse } from '../../engine/summarize';
 
 // ── UI 状态 ──
 
@@ -252,7 +253,9 @@ const initialAppState: AppState = {
   game: {
     energy: 0, energyCap: 0, stardust: 0, turn: 0, happiness: 0,
     hamsters: {}, facilities: {}, angels: {}, achievements: {},
+    buffs: {}, event_flags: {},
     pending_events: {}, adoption_proposal: null,
+    narrative_summary: '', last_summary_turn: 0,
   },
   tab: 'overview',
   log: [],
@@ -363,7 +366,76 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return aiText;
   }, []);
 
-  // 4.2 推进回合并触发 AI 生成
+  // 4.2 叙事总结与历史消息隐藏（每 20 回合触发）
+  const summarizeAndHide = useCallback(async (gameState: GameState) => {
+    console.log('[鼠鼠天堂] 开始叙事总结...');
+
+    // ① 收集所有未隐藏消息
+    const lastId = getLastMessageId();
+    const allMessages = getChatMessages(`0-${lastId}`, { hide_state: 'unhidden' }) as Array<{
+      message_id: number; role: string; message: string;
+    }>;
+
+    // ② 提取叙事片段
+    const narratives = extractNarratives(allMessages);
+    if (narratives.length === 0) {
+      console.log('[鼠鼠天堂] 无叙事内容，跳过总结');
+      return;
+    }
+
+    // ③ 组装总结提示词
+    const prompt = buildSummarizationPrompt(
+      gameState.narrative_summary,
+      gameState.last_summary_turn,
+      gameState.turn,
+      narratives,
+    );
+
+    // ④ AI 生成总结（使用 generateRaw 完全绕过预设，只发送总结提示词）
+    let summaryAiText: string;
+    try {
+      summaryAiText = await generateRaw({
+        should_stream: false,
+        should_silence: true,
+        max_chat_history: 0,
+        ordered_prompts: [
+          { role: 'system', content: prompt },
+        ],
+      });
+    } catch (e) {
+      console.error('[鼠鼠天堂] 总结生成失败:', e);
+      return;
+    }
+
+    // ⑤ 解析总结结果
+    const summary = parseSummaryResponse(summaryAiText);
+    if (!summary) {
+      console.warn('[鼠鼠天堂] 总结解析失败，AI 输出:', summaryAiText.slice(0, 200));
+      return;
+    }
+
+    // ⑥ generateRaw + should_silence 不会创建临时消息，无需删除
+
+    // ⑦ 更新状态：写入总结
+    const updatedGame: GameState = {
+      ...gameState,
+      narrative_summary: summary,
+      last_summary_turn: gameState.turn,
+    };
+    await saveGameState(updatedGame);
+
+    // ⑧ 隐藏旧消息楼层（保留 message 0、message 1、最近 2 条）
+    const currentLastId = getLastMessageId();
+    const hideEnd = currentLastId - 1; // 保留最后 2 条（当前回合的 user+assistant）
+    if (hideEnd > 1) {
+      const toHide = _.range(2, hideEnd + 1).map(id => ({ message_id: id, is_hidden: true }));
+      await setChatMessages(toHide, { refresh: 'affected' });
+    }
+
+    console.log(`[鼠鼠天堂] 叙事总结完成，隐藏了 message 2-${hideEnd}，总结 ${summary.length} 字`);
+  }, []);
+
+  // 4.3 推进回合并触发 AI 生成
   const advanceTurnAndGenerate = useCallback(async () => {
     if (state.generating) return;
     dispatch({ type: 'SET_GENERATING', generating: true });
@@ -384,13 +456,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // 4. 提取叙事文本，保存原始输出
       dispatch({ type: 'SET_AI_OUTPUT', narrative: parseNarrative(aiText), rawOutput: aiText });
 
-      // 5. 从最新楼层重新加载 AI 更新后的状态
+      // 5. 每 20 回合自动总结叙事并隐藏旧消息
+      if (game.turn > 0 && game.turn % 20 === 0) {
+        try {
+          await summarizeAndHide(game);
+        } catch (e) {
+          console.error('[鼠鼠天堂] 叙事总结失败（不影响游戏继续）:', e);
+        }
+      }
+
+      // 6. 从最新楼层重新加载 AI 更新后的状态
       dispatch({ type: 'RELOAD' });
     } catch (e) {
       console.error('[鼠鼠天堂] 回合推进失败:', e);
       dispatch({ type: 'SET_GENERATING', generating: false });
     }
-  }, [state.game, state.generating, sendAndGenerate]);
+  }, [state.game, state.generating, sendAndGenerate, summarizeAndHide]);
 
   // 4.4 个体互动（选择性提示词发送，不推进回合）
   const interactAndGenerate = useCallback(async (
@@ -453,7 +534,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // 恢复所有顶层代码管理字段
       for (const key of ['energy', 'energyCap', 'stardust', 'turn', 'happiness',
                           'facilities', 'achievements', 'buffs', 'event_flags',
-                          'pending_events', 'adoption_proposal']) {
+                          'pending_events', 'adoption_proposal',
+                          'narrative_summary', 'last_summary_turn']) {
         if (key in base) _.set(finalData, `stat_data.${key}`, base[key]);
       }
 

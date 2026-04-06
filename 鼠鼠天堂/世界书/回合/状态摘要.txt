@@ -39,4 +39,11 @@
 <% } else { _%>
 设施: 无
 <% } _%>
+<% var narrativeSummary = getvar('stat_data.narrative_summary', {defaults: ''}); _%>
+<% if (narrativeSummary) { _%>
+
+<narrative_history>
+<%= narrativeSummary %>
+</narrative_history>
+<% } _%>
 </game_state>
