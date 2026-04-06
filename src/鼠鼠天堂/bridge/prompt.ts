@@ -3,6 +3,7 @@
 import type { GameState } from '../schema';
 import { getStateForPrompt } from './state';
 import { getMemoryForPrompt } from '../engine/memory';
+import { getFacilityDef } from '../data/facilities';
 import type { EventType } from '../engine/event';
 
 /**
@@ -60,37 +61,81 @@ export function buildTurnPrompt(
 }
 
 /**
- * 组装个体互动提示词
- * 用于玩家选择"与某角色互动"时
+ * 组装互动专用系统提示词
+ * 用于 generate() 的 injects 参数，替代全量世界书
  */
-export function buildInteractionPrompt(
+export function buildInteractionSystemPrompt(
   state: GameState,
   characterId: string,
+  angelPersonaText?: string | null,
 ): string {
   const parts: string[] = [];
 
-  // 基础状态（简化版）
-  parts.push(`【当前资源】⚡${state.energy}/${state.energyCap} ✨${state.stardust} 💛${state.happiness} 回合${state.turn}`);
+  // 模式声明
+  parts.push('你正在进行一次角色互动对话（非回合推进）。');
+  parts.push('以该角色的视角和语气，与园长进行一段生动的对话互动。');
 
-  // 查找角色
-  const hamster = state.hamsters[characterId];
+  // 简化状态
+  parts.push('');
+  parts.push(`【当前状态】回合${state.turn} ⚡${state.energy}/${state.energyCap} ✨${state.stardust} 💛${state.happiness}`);
+
+  // 目标角色
   const angel = state.angels[characterId];
+  const hamster = state.hamsters[characterId];
 
-  if (hamster) {
+  if (angel) {
+    parts.push('');
+    parts.push(`【互动对象：鼠天使 ${angel.name}】`);
+    if (angelPersonaText) {
+      parts.push(angelPersonaText);
+    } else {
+      parts.push(`等级：Lv.${angel.level} | 管理方向：${angel.manageDomain}`);
+    }
+    const managed = Object.entries(state.facilities)
+      .filter(([, f]) => f.managedBy === characterId)
+      .map(([, f]) => getFacilityDef(f.type)?.name ?? f.type);
+    if (managed.length > 0) {
+      parts.push(`管理设施：${managed.join('、')}`);
+    }
+  } else if (hamster) {
     parts.push('');
     parts.push(`【互动对象：鼠居民 ${hamster.name}】`);
     parts.push(`品种：${hamster.breed} | 性格：${hamster.personality}`);
     parts.push(`心情：${hamster.mood} | 体力：${hamster.stamina}`);
     parts.push(`背景：${hamster.story}`);
-  } else if (angel) {
-    parts.push('');
-    parts.push(`【互动对象：鼠天使 ${angel.name}】`);
-    parts.push(`等级：Lv.${angel.level} | 管理方向：${angel.manageDomain}`);
-    const activeSkills = Object.entries(angel.skills)
-      .filter(([, s]) => angel.level >= s.unlockedAtAngelLevel)
-      .map(([sId]) => sId);
-    if (activeSkills.length > 0) {
-      parts.push(`技能：${activeSkills.join('、')}`);
+    if (hamster.livingAt) {
+      const fac = state.facilities[hamster.livingAt];
+      parts.push(`住在：${getFacilityDef(fac?.type)?.name ?? '未知'}`);
+    }
+  }
+
+  // 周围角色
+  if (angel) {
+    const hamsterList = Object.entries(state.hamsters);
+    if (hamsterList.length > 0) {
+      parts.push('');
+      parts.push('【乐园里的鼠居民】');
+      for (const [, h] of hamsterList) {
+        parts.push(`  ${h.name}(${h.breed}) 性格:${h.personality} 心情:${h.mood}`);
+      }
+    }
+  } else if (hamster) {
+    const relevantAngels = new Set<string>();
+    if (hamster.livingAt) {
+      const mgr = state.facilities[hamster.livingAt]?.managedBy;
+      if (mgr) relevantAngels.add(mgr);
+    }
+    if (hamster.workingAt) {
+      const mgr = state.facilities[hamster.workingAt]?.managedBy;
+      if (mgr) relevantAngels.add(mgr);
+    }
+    if (relevantAngels.size > 0) {
+      parts.push('');
+      parts.push('【附近的天使】');
+      for (const aId of relevantAngels) {
+        const a = state.angels[aId];
+        if (a) parts.push(`  ${a.name}（${a.manageDomain}方向）`);
+      }
     }
   }
 
@@ -101,8 +146,15 @@ export function buildInteractionPrompt(
     parts.push(memoryText);
   }
 
+  // 输出规则
   parts.push('');
-  parts.push('请以该角色的视角生成一段互动场景，体现其性格特征。互动结果可产生小幅心情变化。');
+  parts.push('【输出规则】');
+  parts.push('1. 输出 <Narrative> 标签，包含互动场景描写（2-6句，体现角色性格和语气）');
+  parts.push('2. 可选输出 <UpdateVariable>，但仅允许更新记忆字段：');
+  parts.push('   - 天使记忆：/angels/{ID}/memory/{key}');
+  parts.push('   - 鼠鼠记忆：/hamsters/{ID}/memory/{key}');
+  parts.push('3. 禁止：生成事件（pending_events）、修改资源、修改非记忆字段');
+  parts.push('4. 记忆key格式：t{回合}_{关键词}，value为一句话描述互动要点');
 
   return parts.join('\n');
 }

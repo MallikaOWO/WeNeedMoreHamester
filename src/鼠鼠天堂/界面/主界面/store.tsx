@@ -4,6 +4,8 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef, useCallback } from 'react';
 import type { GameState, Hamster } from '../../schema';
 import { loadGameState, saveGameState, ensurePersistenceLayer } from '../../bridge/state';
+import { buildInteractionSystemPrompt } from '../../bridge/prompt';
+import { getAngelPersonaText } from '../../data/angel-personas';
 import { createInitialGameState } from '../../data/init';
 
 // engine imports
@@ -390,24 +392,111 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, [state.game, state.generating, sendAndGenerate]);
 
-  // 4.4 个体互动
+  // 4.4 个体互动（选择性提示词发送，不推进回合）
+  const interactAndGenerate = useCallback(async (
+    characterId: string,
+    gameState: GameState,
+  ): Promise<string> => {
+    await saveGameState(gameState);
+    const baseMvuData = Mvu.getMvuData({ type: 'message', message_id: 'latest' });
+
+    const character = gameState.hamsters[characterId] || gameState.angels[characterId];
+    const name = character?.name ?? characterId;
+
+    // 创建 user 楼层
+    await createChatMessages(
+      [{ role: 'user', message: `[与${name}互动]`, data: _.cloneDeep(baseMvuData) }],
+      { refresh: 'none' },
+    );
+
+    // 构建互动专用提示词
+    const angelPersona = getAngelPersonaText(characterId);
+    const interactionPrompt = buildInteractionSystemPrompt(gameState, characterId, angelPersona);
+
+    let aiText: string;
+    try {
+      aiText = await generate({
+        should_stream: true,
+        max_chat_history: 6,
+        overrides: {
+          world_info_before: '',
+          world_info_after: '',
+          char_description: '',
+          char_personality: '',
+          scenario: '',
+          dialogue_examples: '',
+          chat_history: { with_depth_entries: false },
+        },
+        injects: [{
+          role: 'system',
+          content: interactionPrompt,
+          position: 'in_chat',
+          depth: 0,
+          should_scan: false,
+        }],
+      });
+    } catch (e) {
+      console.error('[鼠鼠天堂] 互动生成失败:', e);
+      const lastId = getLastMessageId();
+      if (lastId > 0) await deleteChatMessages([lastId], { refresh: 'none' });
+      throw e;
+    }
+
+    // 解析响应 — 只允许记忆更新
+    const parsedData = await Mvu.parseMessage(aiText, _.cloneDeep(baseMvuData));
+    const finalData = parsedData ?? baseMvuData;
+
+    if (parsedData) {
+      const base = _.get(baseMvuData, 'stat_data') as any ?? {};
+      const final = _.get(finalData, 'stat_data') as any ?? {};
+
+      // 恢复所有顶层代码管理字段
+      for (const key of ['energy', 'energyCap', 'stardust', 'turn', 'happiness',
+                          'facilities', 'achievements', 'buffs', 'event_flags',
+                          'pending_events', 'adoption_proposal']) {
+        if (key in base) _.set(finalData, `stat_data.${key}`, base[key]);
+      }
+
+      // 鼠鼠：只保留 memory 更新，其余恢复
+      for (const id of Object.keys(final.hamsters ?? {})) {
+        if (!base.hamsters?.[id]) { delete final.hamsters[id]; continue; }
+        for (const field of ['name', 'breed', 'personality', 'story', 'basePower',
+                             'preference', 'mood', 'stamina', 'livingAt', 'workingAt']) {
+          _.set(finalData, `stat_data.hamsters.${id}.${field}`, base.hamsters[id][field]);
+        }
+      }
+
+      // 天使：只保留 memory 更新，其余恢复
+      for (const id of Object.keys(final.angels ?? {})) {
+        if (!base.angels?.[id]) { delete final.angels[id]; continue; }
+        for (const field of ['name', 'level', 'exp', 'manageDomain', 'assignedFacility', 'skills']) {
+          _.set(finalData, `stat_data.angels.${id}.${field}`, base.angels[id][field]);
+        }
+      }
+    }
+
+    // 创建 assistant 楼层
+    await createChatMessages(
+      [{ role: 'assistant', message: aiText, data: finalData }],
+      { refresh: 'none' },
+    );
+
+    return aiText;
+  }, []);
+
   const interactWithCharacter = useCallback(async (characterId: string) => {
     if (state.generating) return;
     dispatch({ type: 'SET_GENERATING', generating: true });
 
     try {
-      // 直接从 React 状态读取角色信息（不从 MVU 读）
-      const character = state.game.hamsters[characterId] || state.game.angels[characterId];
-      const name = character?.name ?? characterId;
-
-      const aiText = await sendAndGenerate(`[与${name}互动]`, state.game);
+      const aiText = await interactAndGenerate(characterId, state.game);
       dispatch({ type: 'SET_AI_OUTPUT', narrative: parseNarrative(aiText), rawOutput: aiText });
       dispatch({ type: 'RELOAD' });
     } catch (e) {
       console.error('[鼠鼠天堂] 互动失败:', e);
       dispatch({ type: 'SET_GENERATING', generating: false });
     }
-  }, [state.game, state.generating, sendAndGenerate]);
+  }, [state.game, state.generating, interactAndGenerate]);
 
   return (
     <StoreContext.Provider value={{ state, dispatch, advanceTurnAndGenerate, interactWithCharacter }}>
