@@ -14,87 +14,113 @@ const Facilities: React.FC = () => {
   const facilityEntries = Object.entries(game.facilities);
   const tips = getTabGuides(game).facilities;
 
+  const getCatIcon = (cat: string) => {
+    switch (cat) {
+      case 'play': return '🎡';
+      case 'living': return '🏠';
+      case 'function': return '⚙️';
+      default: return '🏗️';
+    }
+  };
+
   return (
-    <div>
+    <div className="fade-in">
       {/* 引导提示 */}
       {tips && tips.length > 0 && (
-        <div className="card" style={{ marginBottom: 12, background: '#eff6ff', borderColor: '#3b82f6' }}>
+        <div className="card guide-card" style={{ marginBottom: 16 }}>
+           <div style={{ fontWeight: 700, marginBottom: 4 }}>💡 扩建指南</div>
           {tips.map((tip, i) => (
-            <div key={i} style={{ color: '#1e40af', fontSize: 13, lineHeight: 1.6, marginBottom: i < tips.length - 1 ? 4 : 0 }}>{tip}</div>
+            <div key={i} style={{ fontSize: 13, lineHeight: 1.6, marginBottom: i < tips.length - 1 ? 4 : 0 }}>{tip}</div>
           ))}
         </div>
       )}
 
       {/* 已建设施 */}
+      <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--color-text-muted)', marginBottom: 10, paddingLeft: 4 }}>
+        🏟️ 已落成的设施 ({facilityEntries.length})
+      </div>
+      
       {facilityEntries.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', color: '#9ca3af', padding: 24, marginBottom: 12 }}>
-          还没有建造任何设施
+        <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '40px 20px', marginBottom: 16 }}>
+           <div style={{ fontSize: 40, marginBottom: 12 }}>🏗️</div>
+           <div>乐园还是空荡荡的...</div>
+           <div style={{ fontSize: 12, marginTop: 4 }}>快去建造第一个设施吧！</div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
           {facilityEntries.map(([fId, f]) => {
             const def = getFacilityDef(f.type);
             const name = def?.name ?? f.type;
             const manager = f.managedBy
               ? game.angels[f.managedBy]?.name ?? '未知'
-              : '无';
+              : '无天使值守';
             const upgradeCheck = canUpgrade(game, fId);
             const cost = def ? getUpgradeCost(def, f.level) : null;
             const occupantCount = Object.keys(f.occupants).length;
 
             return (
-              <div key={fId} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div key={fId} className="card" style={{ padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
-                    <span style={{ fontWeight: 600 }}>{name}</span>
-                    <span style={{ fontSize: 12, color: '#6b7280', marginLeft: 6 }}>Lv.{f.level}</span>
-                  </div>
-                  {def?.category === 'play' && (
-                    <span style={{ fontSize: 12, color: 'var(--color-energy)' }}>⚡ {def.basePower}/回合</span>
-                  )}
-                </div>
-
-                <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
-                  {f.capacity > 0 && (
-                    <span>
-                      {def?.category === 'living'
-                        ? `住户: ${Object.values(game.hamsters).filter(h => h.livingAt === fId).length}/${f.capacity}`
-                        : `玩耍中: ${occupantCount}/${f.capacity}`
-                      } |{' '}
-                    </span>
-                  )}
-                  管理: {manager}
-                  {def?.specialEffect && <span> | {def.specialEffect}</span>}
-                </div>
-
-                {/* 居民/玩耍鼠鼠列表 */}
-                {def?.category === 'living' ? (() => {
-                  const residents = Object.entries(game.hamsters).filter(([, h]) => h.livingAt === fId);
-                  return residents.length > 0 ? (
-                    <div style={{ fontSize: 12, marginTop: 4 }}>
-                      住户: {residents.map(([, h]) => h.name).join('、')}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <span style={{ fontSize: 20 }}>{getCatIcon(def?.category ?? '')}</span>
+                      <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--color-text)' }}>{name}</span>
+                      <span style={{ fontSize: 11, background: 'var(--color-happiness)', color: 'white', padding: '1px 6px', borderRadius: 6, fontWeight: 800 }}>Lv.{f.level}</span>
                     </div>
-                  ) : null;
-                })() : occupantCount > 0 && (
-                  <div style={{ fontSize: 12, marginTop: 4 }}>
-                    玩耍中: {Object.keys(f.occupants).map(id => game.hamsters[id]?.name ?? id).join('、')}
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 6 }}>
+                      {def?.category === 'play' && <span style={{ color: 'var(--color-energy)', fontWeight: 700 }}>⚡ +{def.basePower}/回合 </span>}
+                      {def?.specialEffect && <span style={{ color: 'var(--color-stardust)', fontWeight: 700 }}>🌟 {def.specialEffect}</span>}
+                    </div>
                   </div>
-                )}
-
-                {/* 升级按钮 */}
-                {f.level < 3 && (
-                  <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {f.level < 3 && (
                     <button
-                      className="btn btn-sm"
+                      className="btn btn-sm btn-primary"
                       disabled={!upgradeCheck.ok}
                       onClick={() => dispatch({ type: 'UPGRADE_FACILITY', facilityId: fId })}
-                      title={upgradeCheck.reason}
+                      style={{ fontSize: 11, padding: '6px 10px' }}
                     >
-                      升级 {cost && `(⚡${cost.energy}${cost.stardust > 0 ? ` ✨${cost.stardust}` : ''})`}
+                      🚀 升级 {cost && `(⚡${cost.energy}${cost.stardust > 0 ? ` ✨${cost.stardust}` : ''})`}
                     </button>
-                    {!upgradeCheck.ok && upgradeCheck.reason && (
-                      <span style={{ fontSize: 11, color: '#ef4444' }}>{upgradeCheck.reason}</span>
-                    )}
+                  )}
+                </div>
+
+                <div style={{ background: 'rgba(0,0,0,0.02)', padding: '10px 12px', borderRadius: 12, marginTop: 4 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                    <span style={{ color: 'var(--color-text-muted)' }}>
+                      {f.capacity > 0 && (
+                        <span>
+                          {def?.category === 'living' ? '🏠 住户' : '🎡 玩耍中'}: 
+                          <span style={{ color: 'var(--color-text)', fontWeight: 700, marginLeft: 4 }}>
+                            {def?.category === 'living' 
+                              ? Object.values(game.hamsters).filter(h => h.livingAt === fId).length 
+                              : occupantCount}/{f.capacity}
+                          </span>
+                        </span>
+                      )}
+                    </span>
+                    <span style={{ color: 'var(--color-text-muted)' }}>
+                      👼 管理: <span style={{ color: 'var(--color-text)', fontWeight: 700 }}>{manager}</span>
+                    </span>
+                  </div>
+
+                  {/* 居民/玩耍鼠鼠列表 */}
+                  {def?.category === 'living' ? (() => {
+                    const residents = Object.entries(game.hamsters).filter(([, h]) => h.livingAt === fId);
+                    return residents.length > 0 ? (
+                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 4 }}>
+                        <span style={{ color: 'var(--color-happiness)' }}>♥</span> {residents.map(([, h]) => h.name).join('、')}
+                      </div>
+                    ) : null;
+                  })() : occupantCount > 0 && (
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 4 }}>
+                      <span style={{ color: 'var(--color-energy)' }}>☀</span> {Object.keys(f.occupants).map(id => game.hamsters[id]?.name ?? id).join('、')}
+                    </div>
+                  )}
+                </div>
+
+                {!upgradeCheck.ok && f.level < 3 && upgradeCheck.reason && (
+                  <div style={{ fontSize: 11, color: 'var(--color-mood)', marginTop: 8, fontWeight: 700, textAlign: 'right' }}>
+                    ⚠️ {upgradeCheck.reason}
                   </div>
                 )}
               </div>
@@ -104,60 +130,80 @@ const Facilities: React.FC = () => {
       )}
 
       {/* 建造按钮 */}
-      <button
-        className="btn btn-primary"
-        style={{ width: '100%', marginBottom: 8 }}
-        onClick={() => setShowBuild(!showBuild)}
-      >
-        {showBuild ? '收起' : '建造新设施'}
-      </button>
+      <div style={{ paddingBottom: 20 }}>
+        <button
+          className="btn btn-primary"
+          style={{ width: '100%', padding: '14px 0', fontSize: 16, borderRadius: 20, boxShadow: '0 4px 0 #D14D8E' }}
+          onClick={() => setShowBuild(!showBuild)}
+        >
+          {showBuild ? '❌ 取消建造' : '🏗️ 建造新设施'}
+        </button>
 
-      {/* 建造列表 */}
-      {showBuild && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {(['play', 'living', 'function'] as const).map(cat => {
-            const catLabel = { play: '玩耍', living: '生活', function: '功能' }[cat];
-            const defs = FACILITY_DEFS.filter(d => d.category === cat);
-            return (
-              <div key={cat}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 4 }}>{catLabel}设施</div>
-                {defs.map(def => {
-                  const check = canBuild(game, def.type);
-                  return (
-                    <div
-                      key={def.type}
-                      className="card"
-                      style={{ marginBottom: 4, opacity: check.ok ? 1 : 0.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                    >
-                      <div>
-                        <span style={{ fontWeight: 500 }}>{def.name}</span>
-                        {def.description && (
-                          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 1 }}>{def.description}</div>
-                        )}
-                        <div style={{ fontSize: 11, color: '#6b7280' }}>
-                          {def.capacity > 0 && `容量:${def.capacity} | `}⚡{def.cost.energy}{def.cost.stardust > 0 ? ` ✨${def.cost.stardust}` : ''} | 维护⚡{def.maintenanceCost}/回合 | 天使Lv.{def.requiredAngelLevel}+
-                          {def.specialEffect && ` | ${def.specialEffect}`}
+        {/* 建造列表 */}
+        {showBuild && (
+          <div className="fade-in" style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(['play', 'living', 'function'] as const).map(cat => {
+              const catLabel = { play: '玩耍', living: '生活', function: '功能' }[cat];
+              const defs = FACILITY_DEFS.filter(d => d.category === cat);
+              return (
+                <div key={cat}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--color-text-muted)', marginBottom: 8, paddingLeft: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>{getCatIcon(cat)}</span> {catLabel}类蓝图
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {defs.map(def => {
+                      const check = canBuild(game, def.type);
+                      return (
+                        <div
+                          key={def.type}
+                          className="card"
+                          style={{ 
+                            marginBottom: 0, 
+                            opacity: check.ok ? 1 : 0.7, 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            padding: '12px 16px',
+                            background: check.ok ? 'white' : '#F3F4F6'
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontWeight: 800, color: 'var(--color-text)' }}>{def.name}</span>
+                              <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{def.description}</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              <span>💰 <span style={{ color: 'var(--color-energy)', fontWeight: 700 }}>⚡{def.cost.energy}</span>{def.cost.stardust > 0 ? <span style={{ color: 'var(--color-stardust)', fontWeight: 700 }}> ✨{def.cost.stardust}</span> : ''}</span>
+                              <span>🛠️ 维护: <span style={{ color: 'var(--color-mood)' }}>⚡{def.maintenanceCost}</span></span>
+                              <span>👼 天使: Lv.{def.requiredAngelLevel}+</span>
+                              {def.capacity > 0 && <span>👥 容量: {def.capacity}</span>}
+                            </div>
+                            {def.specialEffect && (
+                              <div style={{ fontSize: 11, color: 'var(--color-stardust)', fontWeight: 700, marginTop: 2 }}>🌟 {def.specialEffect}</div>
+                            )}
+                          </div>
+                          <button
+                            className="btn btn-sm btn-primary"
+                            disabled={!check.ok}
+                            onClick={() => {
+                              dispatch({ type: 'BUILD_FACILITY', facilityType: def.type });
+                              setShowBuild(false);
+                            }}
+                            title={check.reason}
+                            style={{ padding: '8px 16px', fontSize: 12 }}
+                          >
+                            建造
+                          </button>
                         </div>
-                      </div>
-                      <button
-                        className="btn btn-sm btn-primary"
-                        disabled={!check.ok}
-                        onClick={() => {
-                          dispatch({ type: 'BUILD_FACILITY', facilityType: def.type });
-                          setShowBuild(false);
-                        }}
-                        title={check.reason}
-                      >
-                        建造
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

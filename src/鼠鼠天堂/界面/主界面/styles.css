@@ -1,122 +1,187 @@
 @import "tailwindcss";
 
-/* 功能性基础样式，美化留给后期 */
+/* 鼠鼠乐园：活力糖果色主题 (高可读性扁平版) */
 
 :root {
-  --color-energy: #f59e0b;
-  --color-stardust: #8b5cf6;
-  --color-mood: #ef4444;
-  --color-happiness: #ec4899;
+  /* 更有生命力的柔和马卡龙色（去除了淡紫色，换为清新的薄荷水绿） */
+  --color-energy: #FFC454;   /* 温暖的奶酪黄 */
+  --color-stardust: #6DD0C8; /* 清新的薄荷水绿，充满生命力 */
+  --color-mood: #FF9595;     /* 柔和的西柚红 */
+  --color-happiness: #F68CB0;/* 活泼的草莓粉 */
+  
+  --color-bg: #FFFDFB;       /* 微微偏暖的奶油白，降低背景刺眼感 */
+  --color-card-bg: #FFFFFF;
+  --color-border: #F2E9E6;   /* 极浅的暖灰色边框 */
+  
+  /* 加深文本颜色，保证绝对的可读性，避免与背景融为一体 */
+  --color-text: #4A3F3D;       /* 深暖咖色，比纯黑柔和，但足够清晰 */
+  --color-text-muted: #8A7B78; /* 辅助文字颜色适度加深 */
+  
+  /* 极其轻微的自然阴影，几乎是扁平的 */
+  --shadow-soft: 0 4px 16px rgba(74, 63, 61, 0.03);
+  --radius-lg: 20px;
+  --radius-md: 12px;
+  --font-main: "Quicksand", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 body {
   margin: 0;
   padding: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: var(--font-main);
   font-size: 14px;
-  color: #333;
-  background: #faf7f2;
+  color: var(--color-text);
+  background: var(--color-bg);
+  min-height: 100vh;
 }
 
-/* 进度条 */
+/* 扁平化卡片 */
+.card {
+  background: var(--color-card-bg);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
+  margin-bottom: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(74, 63, 61, 0.05);
+}
+
+/* 进度条 - 扁平纯色风格 */
 .bar-track {
-  height: 8px;
-  border-radius: 4px;
-  background: #e5e7eb;
+  height: 10px;
+  border-radius: 5px;
+  background: #F4EBE8;
   overflow: hidden;
 }
 .bar-fill {
   height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
+  border-radius: 5px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* 卡片基础 */
-.card {
-  background: white;
-  border-radius: 8px;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-}
-
-/* 恶搞选项 */
-.silly-option {
-  border: 2px dashed #f59e0b;
-  background: #fffbeb;
-}
-
-/* 标签栏 */
+/* 标签栏 - 柔和风格 */
 .tab-bar {
   display: flex;
-  gap: 2px;
-  background: #e5e7eb;
-  border-radius: 8px;
-  padding: 2px;
+  gap: 4px;
+  background: #F4EBE8;
+  border-radius: 30px;
+  padding: 4px;
+  margin-bottom: 16px;
 }
 .tab-btn {
   flex: 1;
-  padding: 8px 4px;
+  padding: 10px 4px;
   border: none;
   background: transparent;
-  border-radius: 6px;
+  border-radius: 26px;
   cursor: pointer;
-  font-size: 13px;
-  color: #6b7280;
-  transition: all 0.2s;
+  font-size: 14px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 .tab-btn:hover {
-  color: #374151;
+  color: var(--color-text);
 }
 .tab-btn.active {
   background: white;
-  color: #111827;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  color: #D66089; /* 加深的粉色，保证在白色背景上的清晰度 */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-/* 按钮 */
+/* 按钮 - 扁平化无阴影 */
 .btn {
-  padding: 6px 12px;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
   background: white;
   cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
+  background: #FAFAFA;
 }
 .btn:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: #FFFBFB;
+  border-color: #E6D8D4;
 }
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.6;
   cursor: not-allowed;
+  filter: grayscale(0.4);
 }
+
 .btn-primary {
-  background: #3b82f6;
+  background: var(--color-happiness);
   color: white;
-  border-color: #3b82f6;
+  border-color: transparent;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.1); /* 微微的文字阴影保证白色字体的可读性 */
 }
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: #FF9DBE;
 }
+.btn-primary:active:not(:disabled) {
+  background: #E87CA0;
+}
+
 .btn-sm {
-  padding: 3px 8px;
+  padding: 6px 12px;
   font-size: 12px;
+  border-radius: 10px;
 }
 
 /* 叙事面板 */
 .narrative-panel {
-  background: #fffef5;
-  border-color: #e8e4d4;
+  background: #FFFBFB;
+  border: 1px dashed #E6D8D4;
+  line-height: 1.8;
+  color: var(--color-text-muted);
+}
+
+/* 引导提示 */
+.guide-card {
+  background: #F2F9F8;
+  border: 1px solid #D1EAE7;
+  color: #4A7A76;
+}
+
+/* 恶搞选项 */
+.silly-option {
+  border: 1px dashed #F5D38A;
+  background: #FFFCF5;
+}
+
+/* 资源变化标注 */
+.delta-pos { color: #5CB8A1; font-weight: bold; }
+.delta-neg { color: #F07A65; font-weight: bold; }
+.delta-zero { color: var(--color-text-muted); }
+
+/* 动画效果 */
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* 调试面板 */
 .debug-panel {
-  background: #f9fafb;
-  border-color: #e5e7eb;
+  background: #F9F9F9;
+  border: 1px solid #EEEEEE;
+  border-radius: 12px;
+  font-family: monospace;
 }
-
-/* 资源变化标注 */
-.delta-pos { color: #16a34a; }
-.delta-neg { color: #dc2626; }
-.delta-zero { color: #9ca3af; }

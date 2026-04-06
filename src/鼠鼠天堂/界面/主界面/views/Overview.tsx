@@ -14,16 +14,16 @@ const ResourceBar: React.FC<{
   max?: number;
   color: string;
 }> = ({ icon, label, value, max, color }) => (
-  <div style={{ marginBottom: 8 }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-      <span>{icon} {label}</span>
-      <span style={{ fontWeight: 600 }}>{value}{max != null ? ` / ${max}` : ''}</span>
+  <div style={{ marginBottom: 12 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, alignItems: 'baseline' }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)' }}>{icon} {label}</span>
+      <span style={{ fontSize: 15, fontWeight: 800, color: color }}>{value}{max != null ? <span style={{ fontSize: 12, color: 'var(--color-text-muted)', fontWeight: 400 }}> / {max}</span> : ''}</span>
     </div>
     {max != null && (
       <div className="bar-track">
         <div
           className="bar-fill"
-          style={{ width: `${Math.min(100, (value / max) * 100)}%`, background: color }}
+          style={{ width: `${Math.min(100, (value / max) * 100)}%`, background: color, boxShadow: `0 0 8px ${color}44` }}
         />
       </div>
     )}
@@ -182,28 +182,39 @@ const Overview: React.FC = () => {
   const guideTips = getTabGuides(game).overview ?? [];
 
   return (
-    <div>
+    <div className="fade-in">
       {/* 回合信息 */}
-      <div className="card" style={{ marginBottom: 12, textAlign: 'center' }}>
-        <div style={{ fontSize: 20, fontWeight: 700 }}>回合 {game.turn}</div>
-        <div style={{ color: '#6b7280', fontSize: 12, marginTop: 4 }}>
-          {hamsterCount} 只鼠鼠 | {facilityCount} 个设施 | {busyAngels} 天使值班
+      <div className="card" style={{ marginBottom: 16, textAlign: 'center', background: 'linear-gradient(135deg, #fff 0%, #fff5f8 100%)' }}>
+        <div style={{ fontSize: 12, color: 'var(--color-happiness)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Current Progress</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: 'var(--color-text)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
+          <span>🌙</span> 第 {game.turn} 回合 <span>☀️</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 8 }}>
+          <div style={{ background: 'rgba(244, 114, 182, 0.1)', padding: '4px 10px', borderRadius: 12, fontSize: 12, color: 'var(--color-happiness)', fontWeight: 600 }}>🐹 {hamsterCount} 鼠鼠</div>
+          <div style={{ background: 'rgba(192, 132, 252, 0.1)', padding: '4px 10px', borderRadius: 12, fontSize: 12, color: 'var(--color-stardust)', fontWeight: 600 }}>🏠 {facilityCount} 设施</div>
+          <div style={{ background: 'rgba(255, 184, 0, 0.1)', padding: '4px 10px', borderRadius: 12, fontSize: 12, color: 'var(--color-energy)', fontWeight: 600 }}>😇 {busyAngels} 天使</div>
         </div>
       </div>
 
       {/* 叙事面板 */}
       {state.narrative && (
-        <div className="card narrative-panel" style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 6 }}>本回合叙事</div>
-          <div style={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{state.narrative}</div>
+        <div className="card narrative-panel" style={{ marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: -10, right: -10, fontSize: 40, opacity: 0.1 }}>✨</div>
+          <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 8, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span>📖</span> 本回合物语
+          </div>
+          <div style={{ lineHeight: 1.8, fontSize: 14, color: 'var(--color-text)', textShadow: '0 1px 0 white' }}>{state.narrative}</div>
         </div>
       )}
 
       {/* 引导提示 */}
       {guideTips.length > 0 && (
-        <div className="card" style={{ marginBottom: 12, background: '#eff6ff', borderColor: '#3b82f6' }}>
+        <div className="card guide-card" style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>💡</span> 乐园小贴士
+          </div>
           {guideTips.map((tip, i) => (
-            <div key={i} style={{ color: '#1e40af', fontSize: 13, lineHeight: 1.6, marginBottom: i < guideTips.length - 1 ? 4 : 0 }}>
+            <div key={i} style={{ fontSize: 13, lineHeight: 1.6, marginBottom: i < guideTips.length - 1 ? 6 : 0, paddingLeft: 4, borderLeft: '2px solid rgba(3, 105, 161, 0.2)' }}>
               {tip}
             </div>
           ))}
@@ -211,121 +222,111 @@ const Overview: React.FC = () => {
       )}
 
       {/* 资源 */}
-      <div className="card" style={{ marginBottom: 12 }}>
-        <ResourceBar icon="⚡" label="能源" value={game.energy} max={game.energyCap} color="var(--color-energy)" />
-        <ResourceBar icon="✨" label="星尘" value={game.stardust} color="var(--color-stardust)" />
-        <ResourceBar icon="💛" label="心情" value={game.happiness} max={100} color="var(--color-happiness)" />
-        <div style={{ textAlign: 'right', marginTop: 2 }}>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <ResourceBar icon="⚡" label="乐园能源" value={game.energy} max={game.energyCap} color="var(--color-energy)" />
+        <ResourceBar icon="✨" label="梦幻星尘" value={game.stardust} color="var(--color-stardust)" />
+        <ResourceBar icon="💝" label="鼠鼠幸福度" value={game.happiness} max={100} color="var(--color-happiness)" />
+        
+        <div style={{ textAlign: 'right' }}>
           <button
             className="btn btn-sm"
-            style={{ fontSize: 10, color: '#9ca3af', padding: '0 4px' }}
+            style={{ background: 'transparent', boxShadow: 'none', color: 'var(--color-text-muted)', fontWeight: 500 }}
             onClick={() => setShowResourceHelp(!showResourceHelp)}
           >
-            {showResourceHelp ? '收起说明' : '?'}
+            {showResourceHelp ? '收起百科' : '❔ 资源说明'}
           </button>
         </div>
         {showResourceHelp && (
-          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4, lineHeight: 1.6, borderTop: '1px solid #e5e7eb', paddingTop: 6 }}>
-            <div><b>⚡ 能源</b> — 鼠鼠快乐玩耍产生的电力，用于建造设施、维持运营</div>
-            <div><b>✨ 星尘</b> — 天使与星辰共鸣凝聚的稀有资源，用于天使升级</div>
-            <div><b>💛 心情</b> — 鼠鼠们的平均心情值，心情越高产能越高（70=基准，100=+20%）</div>
+          <div className="fade-in" style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8, lineHeight: 1.6, borderTop: '1px dashed var(--color-border)', paddingTop: 8 }}>
+            <div style={{ marginBottom: 4 }}><b>⚡ 能源</b> — 鼠鼠玩耍产生的能量，用于建造与扩建</div>
+            <div style={{ marginBottom: 4 }}><b>✨ 星尘</b> — 天使们的共鸣产物，能让天使变得更强大</div>
+            <div><b>💝 幸福度</b> — 大家的平均心情，越高大家的干劲就越足哦！</div>
           </div>
         )}
       </div>
 
       {/* 产能预估 + 明细 */}
-      <div className="card" style={{ marginBottom: 12 }}>
+      <div className="card" style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span style={{ fontSize: 12, color: '#6b7280' }}>下回合预估 </span>
-            <span style={{ fontWeight: 600, color: production.netTotal >= 0 ? undefined : '#ef4444' }}>
-              ⚡ {production.netTotal >= 0 ? '+' : ''}{production.netTotal}
-            </span>
-            {production.maintenance > 0 && (
-              <span style={{ fontSize: 11, color: '#9ca3af', marginLeft: 4 }}>(产{production.finalTotal} - 维护{production.maintenance})</span>
-            )}
-            {Object.values(game.facilities).some(f => f.type === 'stardust_altar' && f.managedBy) && (
-              <span style={{ marginLeft: 8, fontWeight: 600 }}>✨ +2</span>
-            )}
-            {moodForecast.hamsterDetails.length > 0 && (() => {
-              const delta = moodForecast.predictedAvg - moodForecast.currentAvg;
-              return (
-                <span style={{ marginLeft: 8, fontWeight: 600, color: delta < 0 ? '#ef4444' : delta > 0 ? '#22c55e' : undefined }}>
-                  💛 {delta >= 0 ? '+' : ''}{delta}
-                </span>
-              );
-            })()}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-muted)' }}>下回合预想:</span>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <span style={{ fontWeight: 800, color: production.netTotal >= 0 ? '#10B981' : 'var(--color-mood)' }}>
+                ⚡ {production.netTotal >= 0 ? '+' : ''}{production.netTotal}
+              </span>
+              {Object.values(game.facilities).some(f => f.type === 'stardust_altar' && f.managedBy) && (
+                <span style={{ fontWeight: 800, color: 'var(--color-stardust)' }}>✨ +2</span>
+              )}
+              {moodForecast.hamsterDetails.length > 0 && (() => {
+                const delta = moodForecast.predictedAvg - moodForecast.currentAvg;
+                return (
+                  <span style={{ fontWeight: 800, color: delta < 0 ? 'var(--color-mood)' : delta > 0 ? '#10B981' : 'var(--color-text-muted)' }}>
+                    💝 {delta >= 0 ? '+' : ''}{delta}
+                  </span>
+                );
+              })()}
+            </div>
           </div>
-          {(production.facilities.length > 0 || moodForecast.hamsterDetails.length > 0) && (
-            <button
-              className="btn btn-sm"
-              style={{ fontSize: 11, color: '#9ca3af' }}
-              onClick={() => setShowBreakdown(!showBreakdown)}
-            >
-              {showBreakdown ? '收起' : '明细'}
-            </button>
-          )}
+          <button
+            className="btn btn-sm"
+            onClick={() => setShowBreakdown(!showBreakdown)}
+          >
+            {showBreakdown ? '隐藏' : '明细'}
+          </button>
         </div>
 
         {showBreakdown && (
-          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb', fontSize: 12 }}>
+          <div className="fade-in" style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--color-border)', fontSize: 12 }}>
             {production.facilities.map((fb, i) => (
-              <div key={i} style={{ marginBottom: 6 }}>
-                <div style={{ color: '#374151', fontWeight: 500 }}>{fb.name}</div>
+              <div key={i} style={{ marginBottom: 8, background: 'rgba(0,0,0,0.02)', padding: 8, borderRadius: 12 }}>
+                <div style={{ color: 'var(--color-text)', fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                   <span>🏢</span> {fb.name}
+                </div>
                 {fb.hamsterDetails.map((hd, j) => (
-                  <div key={j} style={{ color: '#6b7280', paddingLeft: 8 }}>
-                    {hd.name}: (设施{hd.facilityBase} + 鼠鼠{hd.base}) × Lv.{hd.levelMult.toFixed(1)}{hd.angelMult > 1 ? ` × 天使${hd.angelMult.toFixed(1)}` : ''} = ⚡{Math.round((hd.facilityBase + hd.base) * hd.levelMult * hd.angelMult)}
+                  <div key={j} style={{ color: 'var(--color-text-muted)', paddingLeft: 20, marginBottom: 2 }}>
+                    {hd.name}: ({hd.facilityBase} + {hd.base}) × {hd.levelMult.toFixed(1)}{hd.angelMult > 1 ? ` × 天使${hd.angelMult.toFixed(1)}` : ''} = ⚡{Math.round((hd.facilityBase + hd.base) * hd.levelMult * hd.angelMult)}
                   </div>
                 ))}
-                <div style={{ color: '#374151', paddingLeft: 8 }}>小计: ⚡{fb.subtotal}</div>
+                <div style={{ color: 'var(--color-text)', paddingLeft: 20, fontWeight: 600 }}>小计: ⚡{fb.subtotal}</div>
               </div>
             ))}
-            <div style={{ borderTop: '1px dashed #e5e7eb', paddingTop: 4, marginTop: 4 }}>
-              <div style={{ color: '#6b7280' }}>
-                基础合计: ⚡{Math.round(production.rawTotal)} × 心情加成{(production.moodMult * 100).toFixed(0)}% = <b>⚡{production.finalTotal}</b>
+            <div style={{ background: 'rgba(244, 114, 182, 0.05)', padding: 10, borderRadius: 12, marginTop: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                <span>产出合计</span>
+                <span style={{ fontWeight: 700 }}>⚡{production.finalTotal}</span>
               </div>
               {production.maintenance > 0 && (
-                <div style={{ color: '#ef4444' }}>
-                  设施维护: -⚡{production.maintenance}
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-mood)', marginBottom: 2 }}>
+                  <span>设施维护费</span>
+                  <span>-⚡{production.maintenance}</span>
                 </div>
               )}
-              <div style={{ fontWeight: 500 }}>
-                净收入: <b>⚡{production.netTotal}</b>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: 4, marginTop: 4, fontWeight: 800 }}>
+                <span>预计净收</span>
+                <span style={{ color: production.netTotal >= 0 ? '#10B981' : 'var(--color-mood)' }}>⚡{production.netTotal}</span>
               </div>
             </div>
-            {moodForecast.hamsterDetails.length > 0 && (
-              <div style={{ borderTop: '1px dashed #e5e7eb', paddingTop: 4, marginTop: 4 }}>
-                <div style={{ color: '#6b7280', marginBottom: 4 }}>心情预估 (当前均值 💛{moodForecast.currentAvg} → 预估 💛{moodForecast.predictedAvg})</div>
-                {moodForecast.hamsterDetails.map((md, i) => (
-                  <div key={i} style={{ color: '#6b7280', paddingLeft: 8 }}>
-                    {md.name}: 💛{md.current} {md.delta >= 0 ? '+' : ''}{md.delta} → <span style={{ color: md.delta < 0 ? '#ef4444' : md.delta > 0 ? '#22c55e' : '#374151' }}>{md.predicted}</span>
-                    {md.delta < 0 && ' (工作消耗)'}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>
 
       {/* 当前 Buff */}
       {Object.keys(game.buffs).length > 0 && (
-        <div className="card" style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>当前效果</div>
+        <div className="card" style={{ marginBottom: 16, background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', borderColor: '#bbf7d0' }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#166534', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span>🌟</span> 乐园祝福 & 状态
+          </div>
           {Object.entries(game.buffs).map(([id, buff]) => {
-            // 生成机制说明
             let mechanic = '';
-            if (buff.type === 'mood_regen') mechanic = `💛+${buff.value}/回合${buff.target === 'global' ? '(全体)' : ''}`;
-            else if (buff.type === 'mood_drain') mechanic = `💛-${buff.value}/回合`;
-            else if (buff.type === 'production_boost') mechanic = `⚡产能+${buff.value}%`;
-            else if (buff.type === 'facility_down') mechanic = `⚡产能-50%`;
+            if (buff.type === 'mood_regen') mechanic = `💝+${buff.value}`;
+            else if (buff.type === 'mood_drain') mechanic = `💝-${buff.value}`;
+            else if (buff.type === 'production_boost') mechanic = `⚡+${buff.value}%`;
+            else if (buff.type === 'facility_down') mechanic = `⚡-50%`;
             else if (buff.type === 'stardust_bonus') mechanic = `✨+${buff.value}`;
-            else if (buff.type === 'lucky_guard') mechanic = '下回合事件含高收益选项';
-            else if (buff.type === 'force_opportunity') mechanic = '下回合必出机遇事件';
             return (
-              <div key={id} style={{ fontSize: 11, display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                <span>{buff.description || buff.type}{mechanic && <span style={{ color: '#6b7280', marginLeft: 4 }}>({mechanic})</span>}</span>
-                <span style={{ color: '#9ca3af', flexShrink: 0, marginLeft: 8 }}>{buff.duration}回合</span>
+              <div key={id} style={{ fontSize: 12, display: 'flex', justifyContent: 'space-between', marginBottom: 4, background: 'rgba(255,255,255,0.5)', padding: '4px 8px', borderRadius: 8 }}>
+                <span style={{ color: '#15803d', fontWeight: 600 }}>{buff.description || buff.type} {mechanic && <span style={{ fontWeight: 400, opacity: 0.8 }}>({mechanic})</span>}</span>
+                <span style={{ color: '#166534', opacity: 0.6 }}>{buff.duration} 回合</span>
               </div>
             );
           })}
@@ -334,54 +335,69 @@ const Overview: React.FC = () => {
 
       {/* 待处理事件提示 */}
       {pendingCount > 0 && (
-        <div className="card" style={{ marginBottom: 12, background: '#fffbeb', borderColor: '#f59e0b' }}>
-          <span style={{ color: '#b45309' }}>有 {pendingCount} 个待处理事件，请先前往「事件」页处理</span>
+        <div className="card silly-option" style={{ marginBottom: 16, textAlign: 'center' }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: '#b45309' }}>
+            🔔 发现了 {pendingCount} 个新奇事！
+          </div>
+          <div style={{ fontSize: 12, color: '#d97706', marginTop: 4 }}>请先前往「事件」页面查看哦~</div>
         </div>
       )}
 
       {/* 成就 */}
       {unlockedAchievements.length > 0 && (
-        <div className="card" style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 4 }}>已解锁成就</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div className="card" style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 8 }}>🏆 乐园荣耀</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {unlockedAchievements.map(a => (
-              <span key={a} style={{ background: '#f3f4f6', padding: '2px 8px', borderRadius: 4, fontSize: 12 }}>{a}</span>
+              <span key={a} style={{ background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)', color: '#92400E', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                ✨ {a}
+              </span>
             ))}
           </div>
         </div>
       )}
 
       {/* 推进回合 */}
-      <button
-        className="btn btn-primary"
-        style={{ width: '100%', padding: '10px 0', fontSize: 15 }}
-        onClick={() => advanceTurnAndGenerate()}
-        disabled={pendingCount > 0 || state.generating}
-      >
-        {state.generating ? '正在生成...' : pendingCount > 0 ? '请先处理待处理事件' : '推进回合'}
-      </button>
+      <div style={{ padding: '0 4px 20px' }}>
+        <button
+          className="btn btn-primary"
+          style={{ width: '100%', padding: '16px 0', fontSize: 18, borderRadius: 24, boxShadow: '0 6px 0 #D14D8E' }}
+          onClick={() => advanceTurnAndGenerate()}
+          disabled={pendingCount > 0 || state.generating}
+        >
+          {state.generating ? (
+            <><span>🍭</span> 正在编织新的一天...</>
+          ) : pendingCount > 0 ? (
+            <><span>⚠️</span> 还有事情没处理完呢</>
+          ) : (
+            <><span>🚀</span> 开启下一回合</>
+          )}
+        </button>
+      </div>
 
       {/* 调试面板 */}
       {state.rawAiOutput && (
-        <div style={{ marginTop: 12 }}>
-          <button
-            className="btn btn-sm"
-            style={{ color: '#9ca3af', fontSize: 11 }}
-            onClick={() => setShowDebug(!showDebug)}
-          >
-            {showDebug ? '收起' : '查看'} AI 原始输出
-          </button>
+        <div style={{ paddingBottom: 20 }}>
+          <div style={{ textAlign: 'center' }}>
+            <button
+              className="btn btn-sm"
+              style={{ background: 'transparent', boxShadow: 'none', color: 'var(--color-text-muted)', opacity: 0.5 }}
+              onClick={() => setShowDebug(!showDebug)}
+            >
+              {showDebug ? '收起' : '查看'} 乐园底层逻辑
+            </button>
+          </div>
           {showDebug && (
-            <div className="card debug-panel" style={{ marginTop: 6 }}>
+            <div className="card debug-panel" style={{ marginTop: 12 }}>
               <pre style={{
-                fontSize: 11,
+                fontSize: 10,
                 lineHeight: 1.5,
                 whiteSpace: 'pre-wrap',
                 wordBreak: 'break-all',
-                maxHeight: 300,
+                maxHeight: 200,
                 overflow: 'auto',
                 margin: 0,
-                color: '#6b7280',
+                color: '#64748b',
               }}>
                 {state.rawAiOutput}
               </pre>

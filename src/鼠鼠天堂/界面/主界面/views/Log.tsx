@@ -7,9 +7,9 @@ import { ACHIEVEMENTS } from '../../../data/achievements';
 const TYPE_ICONS: Record<LogEntry['type'], string> = {
   event: '📜',
   build: '🏗️',
-  upgrade: '⬆️',
+  upgrade: '✨',
   adopt: '🐹',
-  skill: '✨',
+  skill: '🔮',
   achievement: '🏆',
   turn: '⏳',
 };
@@ -20,41 +20,91 @@ const Log: React.FC = () => {
   const unlockedCount = Object.values(game.achievements).filter(Boolean).length;
 
   return (
-    <div>
-      {/* 成就进度 */}
-      <div className="card" style={{ marginBottom: 12 }}>
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>成就进度 ({unlockedCount}/{ACHIEVEMENTS.length})</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <div className="fade-in">
+      {/* 成就进度 - 荣誉殿堂 */}
+      <div className="card" style={{ marginBottom: 16, background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)', borderColor: '#FDE68A' }}>
+        <div style={{ fontWeight: 800, color: '#92400E', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>🏆 乐园荣誉殿堂</span>
+          <span style={{ fontSize: 12, background: 'white', padding: '2px 8px', borderRadius: 10, boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)' }}>
+            已达成 {unlockedCount} / {ACHIEVEMENTS.length}
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {ACHIEVEMENTS.map(ach => {
             const unlocked = !!game.achievements[ach.id];
             return (
               <div
                 key={ach.id}
-                style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: unlocked ? 1 : 0.4 }}
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  fontSize: 12, 
+                  background: unlocked ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.03)', 
+                  padding: '8px 12px', 
+                  borderRadius: 12,
+                  opacity: unlocked ? 1 : 0.6,
+                  border: unlocked ? '1px solid #FDE68A' : '1px solid transparent'
+                }}
               >
-                <span>
-                  {unlocked ? '✅' : '⬜'} {ach.name}
-                  <span style={{ color: '#6b7280', marginLeft: 4 }}>{ach.description}</span>
-                </span>
-                <span style={{ color: '#8b5cf6' }}>✨{ach.reward}</span>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <span style={{ fontSize: 16 }}>{unlocked ? '✨' : '🔒'}</span>
+                  <div>
+                    <div style={{ fontWeight: 700, color: unlocked ? '#92400E' : '#6B7280' }}>{ach.name}</div>
+                    <div style={{ fontSize: 11, color: '#A27E6F' }}>{ach.description}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', fontWeight: 800, color: 'var(--color-stardust)' }}>
+                  +{ach.reward}✨
+                </div>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* 事件日志 */}
-      <div className="card">
-        <div style={{ fontWeight: 600, marginBottom: 8 }}>事件日志</div>
+      {/* 事件日志 - 乐园编年史 */}
+      <div className="card" style={{ padding: '20px' }}>
+        <div style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>📖</span> 乐园编年史
+        </div>
         {state.log.length === 0 ? (
-          <div style={{ fontSize: 12, color: '#9ca3af' }}>暂无日志</div>
+          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-muted)' }}>
+             <div style={{ fontSize: 32, marginBottom: 8 }}>🖋️</div>
+             <div style={{ fontSize: 13 }}>史官正在准备笔墨...</div>
+          </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, maxHeight: 400, overflowY: 'auto' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 10, 
+            maxHeight: 500, 
+            overflowY: 'auto', 
+            paddingRight: 6,
+            scrollbarWidth: 'thin'
+          }}>
             {[...state.log].reverse().map((entry, i) => (
-              <div key={i} style={{ fontSize: 12, display: 'flex', gap: 6 }}>
-                <span style={{ color: '#9ca3af', flexShrink: 0 }}>R{entry.turn}</span>
-                <span>{TYPE_ICONS[entry.type]}</span>
-                <span>{entry.text}</span>
+              <div key={i} style={{ 
+                fontSize: 13, 
+                display: 'flex', 
+                gap: 10, 
+                alignItems: 'flex-start',
+                padding: '8px 0',
+                borderBottom: '1px dashed rgba(0,0,0,0.05)'
+              }}>
+                <div style={{ 
+                  flexShrink: 0, 
+                  background: 'var(--color-bg)', 
+                  padding: '2px 6px', 
+                  borderRadius: 6, 
+                  fontSize: 10, 
+                  fontWeight: 800, 
+                  color: 'var(--color-text-muted)',
+                  marginTop: 2
+                }}>
+                  R{entry.turn}
+                </div>
+                <div style={{ fontSize: 16, flexShrink: 0 }}>{TYPE_ICONS[entry.type]}</div>
+                <div style={{ color: 'var(--color-text)', lineHeight: 1.5 }}>{entry.text}</div>
               </div>
             ))}
           </div>
