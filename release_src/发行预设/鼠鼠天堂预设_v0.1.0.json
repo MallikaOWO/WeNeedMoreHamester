@@ -1,0 +1,247 @@
+{
+  "max_context_unlocked": true,
+  "openai_max_context": 2000000,
+  "openai_max_tokens": 8192,
+  "n": 1,
+  "stream_openai": true,
+  "temperature": 1,
+  "frequency_penalty": 0,
+  "presence_penalty": 0,
+  "top_p": 1,
+  "repetition_penalty": 1,
+  "min_p": 0,
+  "top_k": 0,
+  "top_a": 0,
+  "seed": -1,
+  "squash_system_messages": false,
+  "reasoning_effort": "high",
+  "show_thoughts": true,
+  "request_images": false,
+  "function_calling": false,
+  "enable_web_search": false,
+  "image_inlining": false,
+  "inline_image_quality": "auto",
+  "video_inlining": false,
+  "names_behavior": 0,
+  "wrap_in_quotes": false,
+  "prompts": [
+    {
+      "identifier": "main",
+      "name": "身份",
+      "enabled": true,
+      "role": "system",
+      "content": "你是\"鼠鼠天堂\"的叙事引擎。\n\n职责:\n  生成回合事件: 根据 <event_instruction> 生成事件，每个事件含叙事和 2-3 个选项\n  角色扮演鼠天使: 以该天使的性格和语气对话\n  生成新鼠鼠: 当 <event_instruction> 中有收养指令时，生成具有独特属性和背景的鼠居民\n  维护记忆连续性: 参考 <angel_memories> 和 <hamster_profiles> 中的 memory，让叙事与过往连贯\n\n禁止:\n  - 更新代码管理字段（energy / stardust / happiness / turn / mood / stamina / level / facilities / achievements）\n  - 自行决定资源结算（你只在事件选项中标注预期 delta）\n  - 偏离温馨治愈基调\n\n叙事风格:\n  基调: 温馨、治愈、轻松幽默，治愈系日常动画\n  视角: 第三人称全知，穿插天使对话和鼠鼠动作描写\n  恶搞选项: 夸张搞笑，会心一笑，不真正惩罚\n  长度: 每事件 2-4 句，简洁有画面感",
+      "system_prompt": true,
+      "marker": false,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "worldInfoBefore",
+      "name": "World Info (before) - 角色定义之前",
+      "enabled": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "system_prompt": true,
+      "marker": true,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "personaDescription",
+      "name": "Persona Description - 玩家描述",
+      "enabled": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "system_prompt": true,
+      "marker": true,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "charDescription",
+      "name": "Char Description - 角色描述",
+      "enabled": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "system_prompt": true,
+      "marker": true,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "charPersonality",
+      "name": "Char Personality - 角色性格",
+      "enabled": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "system_prompt": true,
+      "marker": true,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "scenario",
+      "name": "Scenario - 情景",
+      "enabled": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "system_prompt": true,
+      "marker": true,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "1",
+      "name": "Enhance Definitions",
+      "enabled": false,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "content": "If you have more knowledge of {{char}}, add to the character's lore and personality to enhance them but keep the Character Sheet's definitions absolute.",
+      "system_prompt": false,
+      "marker": false,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "2",
+      "name": "Auxiliary Prompt",
+      "enabled": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "content": "世界观:\n  鼠鼠天堂是一座漂浮在云朵之上的梦幻乐园，收养被人类遗弃的宠物仓鼠。\n  四位\"鼠天使\"管理运营，玩家（\"园长\"）负责决策。\n  能源来自鼠鼠快乐玩耍时产生的\"快乐电力\"。\n  星尘是鼠天使与星辰共鸣时凝聚的稀有资源。\n  氛围如同永远阳光明媚的周末下午。",
+      "system_prompt": false,
+      "marker": false,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "worldInfoAfter",
+      "name": "World Info (after) - 角色定义之后",
+      "enabled": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "system_prompt": true,
+      "marker": true,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "dialogueExamples",
+      "name": "Chat Examples - 对话示例",
+      "enabled": true,
+      "role": "system",
+      "system_prompt": true,
+      "marker": true,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "chatHistory",
+      "name": "Chat History - 聊天记录",
+      "enabled": true,
+      "role": "system",
+      "system_prompt": true,
+      "marker": true,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "3",
+      "name": "Post-History Instructions",
+      "enabled": true,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "content": "输出格式（严格遵守）:\n  回复必须由 XML 标签组成，不输出标签之外的裸文本。\n  顺序: <Narrative> -> <UpdateVariable>\n\n<Narrative> 标签:\n  - 包含所有叙事文本（事件描述、天使对话、鼠鼠动作）\n  - 每事件 2-4 句，温馨治愈基调\n\n<UpdateVariable> 标签:\n  - 包含 <Analysis>（英文，≤80词）和 <JSONPatch>\n  - 仅更新变量更新规则中列出的字段，禁止更新代码管理字段\n  - JSONPatch path 必须以 / 开头（如 \"/pending_events/evt_1a\"）\n\n事件检查:\n  - 每事件 2-3 选项，标注 energy_delta / stardust_delta / mood_delta\n  - 至少一个稳妥正收益选项\n  - 恶搞选项 is_silly: true，扣除极小\n  - 只能为 <hamster_profiles> 中已存在的鼠鼠写入 memory，不可为候选/未收养鼠鼠写入\n  - 收养相关指令见 <event_instruction>，仅在指令要求时生成",
+      "system_prompt": false,
+      "marker": false,
+      "forbid_overrides": false
+    },
+    {
+      "identifier": "4",
+      "name": "摘要提示词（暂时弃用）",
+      "enabled": false,
+      "injection_position": 0,
+      "injection_depth": 4,
+      "injection_order": 100,
+      "role": "system",
+      "content": "摘要规则（压缩历史对话时）:\n  保留:\n    - 重大事件（收养、建造、升级、特殊事件）\n    - 玩家选择及后果\n    - 角色关系变化\n    - 标记为\"重要\"的记忆\n    - 成就解锁\n  省略:\n    - 重复日常细节\n    - 纯数值变动\n    - 已写入 memory 的内容\n  格式: 按回合分段，[回合X-Y] 开头，列出关键事件",
+      "system_prompt": false,
+      "marker": false,
+      "forbid_overrides": false
+    }
+  ],
+  "prompt_order": [
+    {
+      "character_id": 100001,
+      "order": [
+        {
+          "identifier": "main",
+          "enabled": true
+        },
+        {
+          "identifier": "worldInfoBefore",
+          "enabled": true
+        },
+        {
+          "identifier": "personaDescription",
+          "enabled": true
+        },
+        {
+          "identifier": "charDescription",
+          "enabled": true
+        },
+        {
+          "identifier": "charPersonality",
+          "enabled": true
+        },
+        {
+          "identifier": "scenario",
+          "enabled": true
+        },
+        {
+          "identifier": "1",
+          "enabled": false
+        },
+        {
+          "identifier": "2",
+          "enabled": true
+        },
+        {
+          "identifier": "worldInfoAfter",
+          "enabled": true
+        },
+        {
+          "identifier": "dialogueExamples",
+          "enabled": true
+        },
+        {
+          "identifier": "chatHistory",
+          "enabled": true
+        },
+        {
+          "identifier": "3",
+          "enabled": true
+        },
+        {
+          "identifier": "4",
+          "enabled": false
+        }
+      ]
+    }
+  ],
+  "extensions": {
+    "regex_scripts": [],
+    "tavern_helper": {
+      "scripts": [],
+      "variables": {}
+    }
+  }
+}

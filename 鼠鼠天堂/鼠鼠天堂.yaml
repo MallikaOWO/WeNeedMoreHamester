@@ -1,8 +1,20 @@
 # yaml-language-server: $schema=https://testingcf.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/character.zh.json
 头像: 头像
-版本: 0.1.0
+版本: 0.5.0
 作者: Mallikā
-备注: 鼠鼠天堂 — SillyTavern 同层前端经营游戏角色卡
+备注: |-
+  鼠鼠天堂 v0.5.0 — SillyTavern 同层前端经营游戏角色卡
+  作者: Mallikā | 配套预设版本: 0.1.0
+
+  免责声明:
+  本角色卡为同人创作/个人项目，不提供任何明示或暗示的保证。
+  使用本角色卡即表示您理解并接受可能存在的 bug、数据丢失等风险。
+  作者不对因使用本角色卡而产生的任何损失承担责任。
+
+  非商业化声明:
+  本项目为非商业性质的免费开源作品，仅供学习、娱乐和交流使用。
+  禁止任何形式的商业化使用、转售或收费分发。
+  如需二次创作或修改，请注明原作者并保持非商业化原则。
 
 第一条消息:
   - 内容: <StatusPlaceHolderImpl/>

@@ -108,6 +108,46 @@ document.querySelector('.last_mes iframe').contentDocument.querySelector('#root'
 注意：iframe 内的元素无法通过外层 `document.querySelector` 直接选中，必须先获取 iframe 的 contentDocument。
 注意：更新内容+build之后需要关掉对话开新游戏才能测新的
 
+## 发行版构建流程
+
+### 版本号
+
+- 角色卡版本：写在 `鼠鼠天堂/鼠鼠天堂.yaml` 的 `版本:` 字段
+- 预设版本：预设 schema 无版本字段，版本号体现在发行文件名中
+- 免责声明和非商业化声明写在角色卡的 `备注:` 字段
+
+### 构建步骤（一键脚本）
+
+```bash
+bash release.sh 0.5.0 0.1.0   # bash release.sh <卡版本> <预设版本>
+```
+
+脚本自动执行以下流程：
+
+1. `pnpm build --env version=X.Y.Z` — 构建前端到 `dist/X.Y.Z/鼠鼠天堂/`
+2. 临时替换 `鼠鼠天堂.yaml` 中 CDN 路径（`dist/` → `dist/X.Y.Z/`）
+3. `node tavern_sync.mjs bundle` — 打包角色卡 (.png) 和预设 (.json)
+4. 还原 yaml（保持开发版无版本号路径）
+5. 复制到发行目录并重命名
+
+### 手动构建注意事项
+
+- 开发构建：`pnpm build` → `dist/鼠鼠天堂/`（无版本号，对应 CDN URL）
+- 发行构建：必须替换 yaml 中 3 处 CDN 路径加入版本号，打包后还原
+- **切勿直接修改 `鼠鼠天堂.yaml` 的 CDN 路径**，开发时需要无版本号路径
+
+### 发行目录结构
+
+```
+release_src/
+  鼠鼠天堂.png          — tavern_sync 直接输出（无版本号）
+  空白预设.json          — tavern_sync 直接输出（无版本号）
+  发行角色卡/
+    鼠鼠天堂_v0.5.0.png  — 带版本号的发行文件
+  发行预设/
+    鼠鼠天堂预设_v0.1.0.json — 带版本号的发行文件
+```
+
 ## 工作目录提醒
 - 总目录是`E:\WeNeedMoreHamster`
 - 游戏本体所在的目录是`E:\WeNeedMoreHamster\WeNeedMoreHamester`
