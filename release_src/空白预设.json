@@ -166,7 +166,7 @@
     },
     {
       "identifier": "4",
-      "name": "摘要提示词",
+      "name": "摘要提示词（暂时弃用）",
       "enabled": false,
       "injection_position": 0,
       "injection_depth": 4,

@@ -27,6 +27,7 @@ const Hamsters: React.FC = () => {
   const { state, dispatch, interactWithCharacter } = useStore();
   const game = state.game;
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [memoryExpanded, setMemoryExpanded] = useState<Record<string, boolean>>({});
   const [assignMode, setAssignMode] = useState<{ hamsterId: string; type: 'work' | 'living' } | null>(null);
 
   const hamsterEntries = Object.entries(game.hamsters);
@@ -206,16 +207,32 @@ const Hamsters: React.FC = () => {
                 )}
 
                 {/* 记忆 */}
-                {Object.keys(h.memory).length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 2 }}>记忆 ({Object.keys(h.memory).length})</div>
-                    {Object.entries(h.memory).slice(-3).map(([key, text]) => (
-                      <div key={key} style={{ fontSize: 11, color: '#374151', lineHeight: 1.4 }}>
-                        {key.startsWith('!') && '⭐ '}[{key}] {text}
+                {Object.keys(h.memory).length > 0 && (() => {
+                  const entries = Object.entries(h.memory);
+                  const isExpanded = memoryExpanded[hId] ?? false;
+                  const shown = isExpanded ? entries : entries.slice(-3);
+                  const hasMore = entries.length > 3;
+                  return (
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 2 }}>
+                        记忆 ({entries.length})
+                        {hasMore && (
+                          <span
+                            style={{ marginLeft: 6, color: '#3b82f6', cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); setMemoryExpanded(p => ({ ...p, [hId]: !isExpanded })); }}
+                          >
+                            {isExpanded ? '收起 ▲' : `展开全部 ▼`}
+                          </span>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
+                      {shown.map(([key, text]) => (
+                        <div key={key} style={{ fontSize: 11, color: '#374151', lineHeight: 1.4 }}>
+                          {key.startsWith('!') ? '⭐ ' : '· '}{text}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
