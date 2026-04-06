@@ -21,39 +21,34 @@ const Log: React.FC = () => {
 
   return (
     <div className="fade-in">
-      {/* 成就进度 - 荣誉殿堂 */}
-      <div className="card" style={{ marginBottom: 16, background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)', borderColor: '#FDE68A' }}>
-        <div style={{ fontWeight: 800, color: '#92400E', marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>🏆 乐园荣誉殿堂</span>
-          <span style={{ fontSize: 12, background: 'white', padding: '2px 8px', borderRadius: 10, boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)' }}>
-            已达成 {unlockedCount} / {ACHIEVEMENTS.length}
-          </span>
+      {/* 成就 */}
+      <div className="card" style={{ background: 'var(--color-energy-bg)', borderColor: 'var(--color-energy)' }}>
+        <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>🏆 成就</span>
+          <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600 }}>{unlockedCount}/{ACHIEVEMENTS.length}</span>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {ACHIEVEMENTS.map(ach => {
             const unlocked = !!game.achievements[ach.id];
             return (
               <div
                 key={ach.id}
-                style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  fontSize: 12, 
-                  background: unlocked ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.03)', 
-                  padding: '8px 12px', 
-                  borderRadius: 12,
-                  opacity: unlocked ? 1 : 0.6,
-                  border: unlocked ? '1px solid #FDE68A' : '1px solid transparent'
+                style={{
+                  display: 'flex', justifyContent: 'space-between', fontSize: 12,
+                  background: unlocked ? 'rgba(255,255,255,0.6)' : 'var(--color-surface)',
+                  padding: '6px 8px', borderRadius: 'var(--radius-sm)',
+                  opacity: unlocked ? 1 : 0.5,
+                  border: unlocked ? '1px solid var(--color-energy)' : '1px solid transparent'
                 }}
               >
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ fontSize: 16 }}>{unlocked ? '✨' : '🔒'}</span>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span>{unlocked ? '✨' : '🔒'}</span>
                   <div>
-                    <div style={{ fontWeight: 700, color: unlocked ? '#92400E' : '#6B7280' }}>{ach.name}</div>
-                    <div style={{ fontSize: 11, color: '#A27E6F' }}>{ach.description}</div>
+                    <div style={{ fontWeight: 600 }}>{ach.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{ach.description}</div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', fontWeight: 800, color: 'var(--color-stardust)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', fontWeight: 700, color: 'var(--color-stardust)', flexShrink: 0 }}>
                   +{ach.reward}✨
                 </div>
               </div>
@@ -62,49 +57,29 @@ const Log: React.FC = () => {
         </div>
       </div>
 
-      {/* 事件日志 - 乐园编年史 */}
-      <div className="card" style={{ padding: '20px' }}>
-        <div style={{ fontWeight: 800, color: 'var(--color-text)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>📖</span> 乐园编年史
-        </div>
+      {/* 日志 */}
+      <div className="card">
+        <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6 }}>📖 乐园日志</div>
         {state.log.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-muted)' }}>
-             <div style={{ fontSize: 32, marginBottom: 8 }}>🖋️</div>
-             <div style={{ fontSize: 13 }}>史官正在准备笔墨...</div>
+          <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--color-text-muted)', fontSize: 12 }}>
+            暂无记录
           </div>
         ) : (
-          <div style={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: 10, 
-            maxHeight: 500, 
-            overflowY: 'auto', 
-            paddingRight: 6,
+          <div style={{
+            display: 'flex', flexDirection: 'column', gap: 2,
+            maxHeight: 400, overflowY: 'auto', paddingRight: 4,
             scrollbarWidth: 'thin'
           }}>
             {[...state.log].reverse().map((entry, i) => (
-              <div key={i} style={{ 
-                fontSize: 13, 
-                display: 'flex', 
-                gap: 10, 
-                alignItems: 'flex-start',
-                padding: '8px 0',
-                borderBottom: '1px dashed rgba(0,0,0,0.05)'
+              <div key={i} style={{
+                fontSize: 12, display: 'flex', gap: 6, alignItems: 'flex-start',
+                padding: '4px 0', borderBottom: '1px solid var(--color-surface)'
               }}>
-                <div style={{ 
-                  flexShrink: 0, 
-                  background: 'var(--color-bg)', 
-                  padding: '2px 6px', 
-                  borderRadius: 6, 
-                  fontSize: 10, 
-                  fontWeight: 800, 
-                  color: 'var(--color-text-muted)',
-                  marginTop: 2
-                }}>
+                <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, color: 'var(--color-text-light)', background: 'var(--color-surface)', padding: '1px 4px', borderRadius: 'var(--radius-sm)', marginTop: 1 }}>
                   R{entry.turn}
-                </div>
-                <div style={{ fontSize: 16, flexShrink: 0 }}>{TYPE_ICONS[entry.type]}</div>
-                <div style={{ color: 'var(--color-text)', lineHeight: 1.5 }}>{entry.text}</div>
+                </span>
+                <span style={{ flexShrink: 0 }}>{TYPE_ICONS[entry.type]}</span>
+                <span style={{ lineHeight: 1.4 }}>{entry.text}</span>
               </div>
             ))}
           </div>

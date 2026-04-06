@@ -1,4 +1,4 @@
-// 3.2 布局框架 — 标签页切换
+// 3.2 布局框架 — 资源栏 + 标签页切换
 
 import React from 'react';
 import { StoreProvider, useStore, type TabId } from './store';
@@ -28,22 +28,55 @@ const TAB_COMPONENTS: Record<TabId, React.FC> = {
   log: Log,
 };
 
+const ResourceStrip: React.FC = () => {
+  const { state } = useStore();
+  const g = state.game;
+  return (
+    <div className="resource-strip">
+      <div className="resource-cell">
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700 }}>
+          <span>⚡ 能源</span>
+          <span style={{ color: 'var(--color-energy)' }}>{g.energy}/{g.energyCap}</span>
+        </div>
+        <div className="bar-track">
+          <div className="bar-fill" style={{ width: `${Math.min(100, (g.energy / g.energyCap) * 100)}%`, background: 'var(--color-energy)' }} />
+        </div>
+      </div>
+      <div className="resource-cell">
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700 }}>
+          <span>✨ 星尘</span>
+          <span style={{ color: 'var(--color-stardust)' }}>{g.stardust}</span>
+        </div>
+      </div>
+      <div className="resource-cell">
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 700 }}>
+          <span>💝 心情</span>
+          <span style={{ color: 'var(--color-happiness)' }}>{g.happiness}</span>
+        </div>
+        <div className="bar-track">
+          <div className="bar-fill" style={{ width: `${g.happiness}%`, background: g.happiness > 60 ? 'var(--color-happiness)' : g.happiness > 30 ? 'var(--color-energy)' : 'var(--color-mood)' }} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AppInner: React.FC = () => {
   const { state, dispatch } = useStore();
 
   if (state.loading) {
     return (
-      <div style={{ 
-        height: '100vh', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        justifyContent: 'center', 
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
         alignItems: 'center',
         background: 'var(--color-bg)',
-        color: 'var(--color-happiness)'
+        color: 'var(--color-text-muted)'
       }}>
-        <div style={{ fontSize: 40, marginBottom: 16, animation: 'wobble 2s infinite' }}>🐹🍭</div>
-        <div style={{ fontWeight: 800, letterSpacing: 2 }}>正在接入乐园终端...</div>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>🐹</div>
+        <div style={{ fontWeight: 700, fontSize: 13 }}>正在连接乐园...</div>
       </div>
     );
   }
@@ -52,42 +85,35 @@ const AppInner: React.FC = () => {
   const guides = getTabGuides(state.game);
 
   return (
-    <div style={{ 
-      maxWidth: 500, 
-      margin: '0 auto', 
-      padding: '16px 12px 40px',
+    <div style={{
+      maxWidth: 500,
+      margin: '0 auto',
+      padding: '0 10px 20px',
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column'
     }}>
-      {/* 顶部标题栏 (可选) */}
-      <div style={{ textAlign: 'center', marginBottom: 20, paddingTop: 10 }}>
-        <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--color-text)', textShadow: '0 2px 4px rgba(244, 114, 182, 0.2)' }}>
-          🐹 鼠鼠乐园 <span style={{ color: 'var(--color-happiness)' }}>Paradise</span>
-        </div>
-      </div>
+      {/* 常驻资源栏 */}
+      <ResourceStrip />
 
       {/* 标签栏 */}
-      <div className="tab-bar">
+      <div className="tab-bar" style={{ marginTop: 8 }}>
         {TABS.map(t => (
           <button
             key={t.id}
             className={`tab-btn ${state.tab === t.id ? 'active' : ''}`}
             onClick={() => dispatch({ type: 'SET_TAB', tab: t.id })}
-            style={{ position: 'relative' }}
           >
             {t.label}
             {guides[t.id] && state.tab !== t.id && (
               <span style={{
                 position: 'absolute',
-                top: 6,
-                right: 6,
-                width: 8,
-                height: 8,
+                top: 4,
+                right: 4,
+                width: 6,
+                height: 6,
                 borderRadius: '50%',
                 background: 'var(--color-mood)',
-                border: '2px solid white',
-                boxShadow: '0 2px 4px rgba(248, 113, 113, 0.4)',
                 animation: 'pulse 1.5s infinite'
               }} />
             )}
@@ -99,15 +125,6 @@ const AppInner: React.FC = () => {
       <div style={{ flex: 1 }}>
         <ActiveView />
       </div>
-
-      {/* 底部装饰或留白 */}
-      <style>{`
-        @keyframes pulse {
-          0% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.3); opacity: 0.8; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 };

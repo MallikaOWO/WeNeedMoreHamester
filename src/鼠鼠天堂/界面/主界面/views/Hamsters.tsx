@@ -6,19 +6,19 @@ import { getTabGuides } from '../guides';
 import { getFacilityDef, FACILITY_DEFS } from '../../../data/facilities';
 
 const MoodBar: React.FC<{ value: number }> = ({ value }) => (
-  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(244, 114, 182, 0.05)', padding: '2px 8px', borderRadius: 10 }}>
+  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
     <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-happiness)' }}>💝{value}</span>
-    <div className="bar-track" style={{ width: 40, height: 8 }}>
+    <div className="bar-track" style={{ width: 36, height: 6 }}>
       <div className="bar-fill" style={{ width: `${value}%`, background: value > 60 ? 'var(--color-happiness)' : value > 30 ? 'var(--color-energy)' : 'var(--color-mood)' }} />
     </div>
   </div>
 );
 
 const StaminaBar: React.FC<{ value: number }> = ({ value }) => (
-  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(52, 211, 153, 0.05)', padding: '2px 8px', borderRadius: 10 }}>
-    <span style={{ fontSize: 11, fontWeight: 700, color: '#059669' }}>🏃{value}</span>
-    <div className="bar-track" style={{ width: 40, height: 8 }}>
-      <div className="bar-fill" style={{ width: `${value}%`, background: '#34D399' }} />
+  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-positive)' }}>🏃{value}</span>
+    <div className="bar-track" style={{ width: 36, height: 6 }}>
+      <div className="bar-fill" style={{ width: `${value}%`, background: 'var(--color-positive)' }} />
     </div>
   </div>
 );
@@ -37,17 +37,17 @@ const Hamsters: React.FC = () => {
     return (
       <div className="fade-in">
         {tips && tips.length > 0 && (
-          <div className="card guide-card" style={{ marginBottom: 16 }}>
-             <div style={{ fontWeight: 700, marginBottom: 4 }}>💡 寻找小伙伴</div>
+          <div className="card guide-card">
+            <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12 }}>💡 寻找小伙伴</div>
             {tips.map((tip, i) => (
-              <div key={i} style={{ fontSize: 13, lineHeight: 1.6 }}>{tip}</div>
+              <div key={i} style={{ fontSize: 12, lineHeight: 1.5 }}>{tip}</div>
             ))}
           </div>
         )}
-        <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '48px 24px' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🐹❓</div>
-          <div style={{ fontWeight: 600 }}>乐园里还没有鼠鼠入住呢...</div>
-          <div style={{ fontSize: 12, marginTop: 8 }}>快去推进回合，看看有没有迷路的鼠鼠吧！</div>
+        <div className="card" style={{ textAlign: 'center', color: 'var(--color-text-muted)', padding: '32px 16px' }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🐹❓</div>
+          <div style={{ fontWeight: 600, fontSize: 13 }}>乐园里还没有鼠鼠</div>
+          <div style={{ fontSize: 12, marginTop: 4 }}>推进回合看看有没有迷路的鼠鼠吧</div>
         </div>
       </div>
     );
@@ -71,12 +71,12 @@ const Hamsters: React.FC = () => {
     });
 
   return (
-    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {tips && tips.length > 0 && (
         <div className="card guide-card">
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>💡 小提示</div>
+          <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12 }}>💡 小提示</div>
           {tips.map((tip, i) => (
-            <div key={i} style={{ fontSize: 13, lineHeight: 1.6 }}>{tip}</div>
+            <div key={i} style={{ fontSize: 12, lineHeight: 1.5 }}>{tip}</div>
           ))}
         </div>
       )}
@@ -93,53 +93,46 @@ const Hamsters: React.FC = () => {
           <div key={hId} className="card" style={{ padding: 0, overflow: 'hidden' }}>
             {/* 头部 */}
             <div
-              style={{ padding: '16px 16px 12px', cursor: 'pointer', background: expanded ? 'linear-gradient(to bottom, rgba(244, 114, 182, 0.05), transparent)' : 'transparent' }}
+              style={{ padding: '10px 12px 8px', cursor: 'pointer', background: expanded ? 'var(--color-happiness-bg)' : 'transparent' }}
               onClick={() => { setExpandedId(expanded ? null : hId); setAssignMode(null); }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                 <div>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--color-text)' }}>{h.name}</span>
-                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginLeft: 8, background: '#F3F4F6', padding: '2px 8px', borderRadius: 8 }}>{h.breed}</span>
+                  <span style={{ fontSize: 15, fontWeight: 800 }}>{h.name}</span>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginLeft: 6, background: 'var(--color-surface)', padding: '1px 6px', borderRadius: 'var(--radius-sm)' }}>{h.breed}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <MoodBar value={h.mood} />
                   <StaminaBar value={h.stamina} />
                 </div>
               </div>
 
               {/* 状态简报 */}
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 11, color: '#7C6A71', background: '#FFF0F6', padding: '2px 6px', borderRadius: 4 }}>性格: {h.personality}</span>
-                <span style={{ fontSize: 11, color: '#0369A1', background: '#E0F2FE', padding: '2px 6px', borderRadius: 4 }}>🏠 {livingName}</span>
-                <span style={{ fontSize: 11, color: workName ? '#166534' : '#6B7280', background: workName ? '#DCFCE7' : '#F3F4F6', padding: '2px 6px', borderRadius: 4 }}>
-                  {workName ? `🎡 正在玩耍: ${workName}` : '💤 休息中'}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', background: 'var(--color-happiness-bg)', padding: '1px 5px', borderRadius: 'var(--radius-sm)' }}>{h.personality}</span>
+                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', background: 'var(--color-stardust-bg)', padding: '1px 5px', borderRadius: 'var(--radius-sm)' }}>🏠 {livingName}</span>
+                <span style={{ fontSize: 11, color: 'var(--color-text-muted)', background: workName ? 'var(--color-energy-bg)' : 'var(--color-surface)', padding: '1px 5px', borderRadius: 'var(--radius-sm)' }}>
+                  {workName ? `🎡 ${workName}` : '💤 休息中'}
                 </span>
               </div>
             </div>
 
             {/* 展开详情 */}
             {expanded && (
-              <div className="fade-in" style={{ padding: '0 16px 16px', borderTop: '1px dashed var(--color-border)' }}>
-                <div style={{ marginTop: 12, background: 'rgba(255,255,255,0.5)', padding: 12, borderRadius: 16 }}>
-                  <div style={{ fontSize: 13, marginBottom: 8, color: 'var(--color-text)', lineHeight: 1.5 }}>
-                    <span style={{ fontWeight: 700, color: 'var(--color-happiness)' }}>[背景故事]</span> {h.story}
+              <div className="fade-in" style={{ padding: '0 12px 12px', borderTop: '1px dashed var(--color-border)' }}>
+                <div style={{ marginTop: 8, background: 'var(--color-surface)', padding: 10, borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ fontSize: 12, marginBottom: 6, lineHeight: 1.5 }}>
+                    <span style={{ fontWeight: 700, color: 'var(--color-accent)' }}>背景</span> {h.story}
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--color-text-muted)' }}>
-                    <span>🍭 偏好: <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>{(h.preference && FACILITY_DEFS.find(d => d.type === h.preference)?.name) || h.preference || '随遇而安'}</span></span>
-                    <span>⚡ 基础产能: <span style={{ color: 'var(--color-energy)', fontWeight: 800 }}>{h.basePower}</span></span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-muted)' }}>
+                    <span>偏好: <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>{(h.preference && FACILITY_DEFS.find(d => d.type === h.preference)?.name) || h.preference || '随遇而安'}</span></span>
+                    <span>⚡ 产能: <span style={{ color: 'var(--color-energy)', fontWeight: 700 }}>{h.basePower}</span></span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                  {/* 动作按钮 */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
                   {h.workingAt ? (
-                    <button
-                      className="btn btn-sm"
-                      style={{ background: '#F3F4F6', color: '#4B5563' }}
-                      onClick={() => dispatch({ type: 'STOP_WORKING', hamsterId: hId })}
-                    >
-                      🏠 回窝休息
-                    </button>
+                    <button className="btn btn-sm" onClick={() => dispatch({ type: 'STOP_WORKING', hamsterId: hId })}>🏠 回窝休息</button>
                   ) : (
                     <button
                       className="btn btn-sm btn-primary"
@@ -151,28 +144,28 @@ const Hamsters: React.FC = () => {
                   )}
                   <button
                     className="btn btn-sm"
-                    style={{ background: '#E0F2FE', color: '#0369A1' }}
+                    style={{ background: 'var(--color-stardust-bg)', borderColor: 'var(--color-stardust)' }}
                     onClick={() => setAssignMode(isAssigning && assignMode?.type === 'living' ? null : { hamsterId: hId, type: 'living' })}
                   >
                     📦 搬家
                   </button>
                   <button
                     className="btn btn-sm btn-primary"
-                    style={{ background: 'var(--color-stardust)', boxShadow: '0 2px 0 #8B5CF6' }}
+                    style={{ background: 'var(--color-stardust)' }}
                     onClick={() => interactWithCharacter(hId)}
                     disabled={state.generating}
                   >
-                    {state.generating ? '✨ 互动中...' : '💬 摸摸它'}
+                    {state.generating ? '互动中...' : '💬 摸摸它'}
                   </button>
                 </div>
 
-                {/* 设施选择列表 */}
+                {/* 设施选择 */}
                 {isAssigning && (
-                  <div className="fade-in" style={{ marginTop: 12, background: '#F9FAFB', padding: 12, borderRadius: 16, border: '1px solid #E5E7EB' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8, color: '#4B5563' }}>
+                  <div className="fade-in" style={{ marginTop: 8, background: 'var(--color-surface)', padding: 8, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6, color: 'var(--color-text-muted)' }}>
                       {assignMode?.type === 'work' ? '🎡 选择玩耍设施' : '📦 选择新住所'}:
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {(assignMode?.type === 'work' ? availableWorkFacilities : getAvailableLivingFacilities(hId)).map(([fId, f]) => {
                         const def = getFacilityDef(f.type);
                         const isCurrent = h.livingAt === fId;
@@ -181,7 +174,7 @@ const Hamsters: React.FC = () => {
                           <button
                             key={fId}
                             className="btn btn-sm"
-                            style={{ justifyContent: 'space-between', padding: '8px 12px' }}
+                            style={{ justifyContent: 'space-between', padding: '6px 10px' }}
                             disabled={isCurrent}
                             onClick={() => {
                               dispatch({ type: assignMode?.type === 'work' ? 'ASSIGN_WORK' : 'CHANGE_LIVING', hamsterId: hId, facilityId: fId });
@@ -197,33 +190,30 @@ const Hamsters: React.FC = () => {
                   </div>
                 )}
 
-                {/* 记忆日记 */}
+                {/* 记忆 */}
                 {Object.keys(h.memory).length > 0 && (() => {
                   const entries = Object.entries(h.memory);
-                  const isExpanded = memoryExpanded[hId] ?? false;
-                  const shown = isExpanded ? entries : entries.slice(-3);
+                  const isMemExpanded = memoryExpanded[hId] ?? false;
+                  const shown = isMemExpanded ? entries : entries.slice(-3);
                   const hasMore = entries.length > 3;
                   return (
-                    <div style={{ marginTop: 16 }}>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--color-happiness)', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
-                        <span>📓 鼠鼠心语</span>
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                        <span>📓 记忆 ({entries.length})</span>
                         {hasMore && (
                           <span
-                            style={{ color: 'var(--color-stardust)', cursor: 'pointer', fontSize: 11 }}
-                            onClick={(e) => { e.stopPropagation(); setMemoryExpanded(p => ({ ...p, [hId]: !isExpanded })); }}
+                            style={{ color: 'var(--color-stardust)', cursor: 'pointer' }}
+                            onClick={(e) => { e.stopPropagation(); setMemoryExpanded(p => ({ ...p, [hId]: !isMemExpanded })); }}
                           >
-                            {isExpanded ? '收起 ▲' : `查看往事 (${entries.length}) ▼`}
+                            {isMemExpanded ? '收起 ▲' : '展开 ▼'}
                           </span>
                         )}
                       </div>
-                      <div style={{ background: '#FFF9FE', padding: '10px 12px', borderRadius: 12, border: '1px solid #FFD1E8' }}>
-                        {shown.map(([key, text]) => (
-                          <div key={key} style={{ fontSize: 12, color: 'var(--color-text)', lineHeight: 1.6, marginBottom: 4, display: 'flex', gap: 6 }}>
-                            <span style={{ color: key.startsWith('!') ? 'var(--color-happiness)' : 'var(--color-border)' }}>{key.startsWith('!') ? '💖' : '🐾'}</span>
-                            <span>{text}</span>
-                          </div>
-                        ))}
-                      </div>
+                      {shown.map(([key, text]) => (
+                        <div key={key} style={{ fontSize: 11, color: 'var(--color-text)', lineHeight: 1.5, marginBottom: 2 }}>
+                          {key.startsWith('!') ? '⭐ ' : '· '}{text}
+                        </div>
+                      ))}
                     </div>
                   );
                 })()}

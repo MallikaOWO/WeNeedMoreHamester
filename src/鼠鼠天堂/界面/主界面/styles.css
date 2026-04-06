@@ -1,26 +1,43 @@
 @import "tailwindcss";
 
-/* 鼠鼠乐园：活力糖果色主题 (高可读性扁平版) */
+/* 鼠鼠乐园：马卡龙暖色主题 */
 
 :root {
-  /* 更有生命力的柔和马卡龙色（去除了淡紫色，换为清新的薄荷水绿） */
-  --color-energy: #FFC454;   /* 温暖的奶酪黄 */
-  --color-stardust: #6DD0C8; /* 清新的薄荷水绿，充满生命力 */
-  --color-mood: #FF9595;     /* 柔和的西柚红 */
-  --color-happiness: #F68CB0;/* 活泼的草莓粉 */
-  
-  --color-bg: #FFFDFB;       /* 微微偏暖的奶油白，降低背景刺眼感 */
+  /* 主题四色 */
+  --color-energy: #FFC454;
+  --color-stardust: #6DD0C8;
+  --color-mood: #FF9595;
+  --color-happiness: #F68CB0;
+
+  /* 语义色（从主题色派生） */
+  --color-positive: #6DD0C8;
+  --color-negative: #FF9595;
+  --color-warning: #FFC454;
+  --color-accent: #F68CB0;
+
+  /* 浅底色 */
+  --color-energy-bg: #FFF8E8;
+  --color-stardust-bg: #EEFAF8;
+  --color-mood-bg: #FFF0F0;
+  --color-happiness-bg: #FFF5F8;
+
+  /* 中性色 */
+  --color-bg: #FFFDFB;
   --color-card-bg: #FFFFFF;
-  --color-border: #F2E9E6;   /* 极浅的暖灰色边框 */
-  
-  /* 加深文本颜色，保证绝对的可读性，避免与背景融为一体 */
-  --color-text: #4A3F3D;       /* 深暖咖色，比纯黑柔和，但足够清晰 */
-  --color-text-muted: #8A7B78; /* 辅助文字颜色适度加深 */
-  
-  /* 极其轻微的自然阴影，几乎是扁平的 */
-  --shadow-soft: 0 4px 16px rgba(74, 63, 61, 0.03);
-  --radius-lg: 20px;
-  --radius-md: 12px;
+  --color-surface: #FAF6F4;
+  --color-border: #F2E9E6;
+  --color-border-strong: #E6D8D4;
+
+  /* 文本 */
+  --color-text: #4A3F3D;
+  --color-text-muted: #8A7B78;
+  --color-text-light: #B5A8A4;
+
+  /* 布局 */
+  --shadow-soft: 0 2px 8px rgba(74, 63, 61, 0.04);
+  --radius-lg: 14px;
+  --radius-md: 10px;
+  --radius-sm: 6px;
   --font-main: "Quicksand", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
@@ -34,154 +51,236 @@ body {
   min-height: 100vh;
 }
 
-/* 扁平化卡片 */
+/* 卡片 */
 .card {
   background: var(--color-card-bg);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 12px;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
-  margin-bottom: 16px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 8px;
 }
 
-.card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(74, 63, 61, 0.05);
-}
-
-/* 进度条 - 扁平纯色风格 */
+/* 进度条 */
 .bar-track {
-  height: 10px;
-  border-radius: 5px;
-  background: #F4EBE8;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-surface);
   overflow: hidden;
 }
 .bar-fill {
   height: 100%;
-  border-radius: 5px;
-  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 4px;
+  transition: width 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
 }
 
-/* 标签栏 - 柔和风格 */
+/* 资源栏（App 级别常驻） */
+.resource-strip {
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--color-card-bg);
+  border-bottom: 1px solid var(--color-border);
+  margin: 0 -10px 0;
+}
+.resource-cell {
+  flex: 1;
+  min-width: 0;
+}
+.resource-cell .bar-track {
+  height: 5px;
+  margin-top: 3px;
+}
+
+/* 标签栏 — 下划线式 */
 .tab-bar {
   display: flex;
-  gap: 4px;
-  background: #F4EBE8;
-  border-radius: 30px;
-  padding: 4px;
-  margin-bottom: 16px;
+  gap: 0;
+  background: transparent;
+  border-bottom: 2px solid var(--color-border);
+  padding: 0;
+  margin-bottom: 10px;
 }
 .tab-btn {
   flex: 1;
-  padding: 10px 4px;
+  padding: 8px 2px;
   border: none;
   background: transparent;
-  border-radius: 26px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--color-text-muted);
   font-weight: 600;
-  transition: all 0.2s ease;
+  transition: color 0.15s, border-color 0.15s;
+  position: relative;
 }
 .tab-btn:hover {
   color: var(--color-text);
 }
 .tab-btn.active {
-  background: white;
-  color: #D66089; /* 加深的粉色，保证在白色背景上的清晰度 */
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
 }
 
-/* 按钮 - 扁平化无阴影 */
+/* 按钮 */
 .btn {
-  padding: 10px 20px;
+  padding: 8px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background: white;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--color-text);
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
 }
 .btn:active:not(:disabled) {
-  transform: scale(0.98);
-  background: #FAFAFA;
+  transform: scale(0.97);
+  background: var(--color-surface);
 }
 .btn:hover:not(:disabled) {
-  background: #FFFBFB;
-  border-color: #E6D8D4;
+  border-color: var(--color-border-strong);
 }
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
-  filter: grayscale(0.4);
 }
 
 .btn-primary {
-  background: var(--color-happiness);
+  background: var(--color-accent);
   color: white;
   border-color: transparent;
-  text-shadow: 0 1px 1px rgba(0,0,0,0.1); /* 微微的文字阴影保证白色字体的可读性 */
 }
 .btn-primary:hover:not(:disabled) {
   background: #FF9DBE;
+  border-color: transparent;
 }
 .btn-primary:active:not(:disabled) {
   background: #E87CA0;
 }
 
 .btn-sm {
-  padding: 6px 12px;
+  padding: 5px 10px;
   font-size: 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
 }
 
 /* 叙事面板 */
 .narrative-panel {
-  background: #FFFBFB;
-  border: 1px dashed #E6D8D4;
-  line-height: 1.8;
-  color: var(--color-text-muted);
+  background: var(--color-happiness-bg);
+  border: 1px dashed var(--color-border-strong);
+  line-height: 1.7;
 }
 
 /* 引导提示 */
 .guide-card {
-  background: #F2F9F8;
-  border: 1px solid #D1EAE7;
-  color: #4A7A76;
+  background: var(--color-stardust-bg);
+  border-color: var(--color-stardust);
+  color: var(--color-text);
 }
 
 /* 恶搞选项 */
 .silly-option {
-  border: 1px dashed #F5D38A;
-  background: #FFFCF5;
+  border: 1px dashed var(--color-energy);
+  background: var(--color-energy-bg);
 }
 
 /* 资源变化标注 */
-.delta-pos { color: #5CB8A1; font-weight: bold; }
-.delta-neg { color: #F07A65; font-weight: bold; }
-.delta-zero { color: var(--color-text-muted); }
+.delta-pos { color: var(--color-positive); font-weight: bold; }
+.delta-neg { color: var(--color-negative); font-weight: bold; }
 
-/* 动画效果 */
+/* 设施网格 */
+.facility-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.facility-tile {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  text-align: center;
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  transition: border-color 0.2s;
+}
+.facility-tile[data-level="2"] {
+  border-color: var(--color-stardust);
+  background: linear-gradient(to bottom, var(--color-stardust-bg), white);
+}
+.facility-tile[data-level="3"] {
+  border-color: var(--color-energy);
+  background: linear-gradient(to bottom, var(--color-energy-bg), white);
+  box-shadow: 0 0 10px rgba(255, 196, 84, 0.12);
+}
+.facility-empty {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-light);
+  cursor: pointer;
+  background: var(--color-surface);
+  gap: 4px;
+  font-size: 12px;
+}
+.facility-empty:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.zone-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  padding: 6px 4px 4px;
+  border-bottom: 1px dashed var(--color-border);
+  margin-bottom: 8px;
+}
+
+/* 动画 */
 .fade-in {
-  animation: fadeIn 0.4s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* 调试面板 */
 .debug-panel {
-  background: #F9F9F9;
-  border: 1px solid #EEEEEE;
-  border-radius: 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-family: monospace;
+}
+
+/* 底部操作栏 */
+.bottom-action {
+  position: sticky;
+  bottom: 0;
+  padding: 8px 0 12px;
+  background: linear-gradient(to bottom, transparent, var(--color-bg) 30%);
 }
