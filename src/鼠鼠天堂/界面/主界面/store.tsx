@@ -19,7 +19,7 @@ import { extractNarratives, buildSummarizationPrompt, parseSummaryResponse } fro
 
 // ── UI 状态 ──
 
-export type TabId = 'overview' | 'hamsters' | 'facilities' | 'angels' | 'events' | 'log';
+export type TabId = 'overview' | 'hamsters' | 'facilities' | 'angels' | 'events' | 'log' | 'settings';
 
 export interface LogEntry {
   turn: number;

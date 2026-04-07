@@ -1,14 +1,16 @@
 // 3.2 布局框架 — 资源栏 + 标签页切换
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StoreProvider, useStore, type TabId } from './store';
 import { getTabGuides } from './guides';
+import { checkForUpdate, getCachedUpdateStatus } from './update-check';
 import Overview from './views/Overview';
 import Events from './views/Events';
 import Facilities from './views/Facilities';
 import Hamsters from './views/Hamsters';
 import Angels from './views/Angels';
 import Log from './views/Log';
+import Settings from './views/Settings';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: '总览' },
@@ -26,6 +28,7 @@ const TAB_COMPONENTS: Record<TabId, React.FC> = {
   angels: Angels,
   events: Events,
   log: Log,
+  settings: Settings,
 };
 
 const ResourceStrip: React.FC = () => {
@@ -63,6 +66,16 @@ const ResourceStrip: React.FC = () => {
 
 const AppInner: React.FC = () => {
   const { state, dispatch } = useStore();
+  const [hasUpdate, setHasUpdate] = useState(false);
+
+  useEffect(() => {
+    const cached = getCachedUpdateStatus();
+    if (cached !== null) {
+      setHasUpdate(cached);
+    } else {
+      checkForUpdate().then(setHasUpdate).catch(() => {});
+    }
+  }, []);
 
   if (state.loading) {
     return (
@@ -119,6 +132,25 @@ const AppInner: React.FC = () => {
             )}
           </button>
         ))}
+        <button
+          className={`tab-btn ${state.tab === 'settings' ? 'active' : ''}`}
+          onClick={() => dispatch({ type: 'SET_TAB', tab: 'settings' })}
+          style={{ flex: 'none', padding: '8px 10px', fontSize: 13 }}
+        >
+          ⚙
+          {hasUpdate && state.tab !== 'settings' && (
+            <span style={{
+              position: 'absolute',
+              top: 4,
+              right: 4,
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: 'var(--color-mood)',
+              animation: 'pulse 1.5s infinite'
+            }} />
+          )}
+        </button>
       </div>
 
       {/* 内容区 */}
