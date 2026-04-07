@@ -23,7 +23,7 @@ const MANIFEST_URL = 'https://raw.githubusercontent.com/MallikaOWO/WeNeedMoreHam
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester';
 
 export async function fetchManifest(): Promise<Manifest> {
-  const resp = await fetch(MANIFEST_URL, { cache: 'no-cache' });
+  const resp = await fetch(`${MANIFEST_URL}?t=${Date.now()}`, { cache: 'no-store' });
   if (!resp.ok) throw new Error(`获取清单失败 (${resp.status})`);
   return resp.json();
 }
