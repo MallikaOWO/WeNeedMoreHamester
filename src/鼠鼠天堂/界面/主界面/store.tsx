@@ -9,7 +9,7 @@ import { getAngelPersonaText } from '../../data/angel-personas';
 import { createInitialGameState } from '../../data/init';
 
 // engine imports
-import { buildFacility, upgradeFacility } from '../../engine/facility';
+import { buildFacility, upgradeFacility, demolishFacility } from '../../engine/facility';
 import { adoptHamster, assignToWork, stopWorking, changeLiving } from '../../engine/hamster';
 import { levelUpAngel, useSkill, tickCooldowns } from '../../engine/angel';
 import { applyEventChoice, rollEventSlots } from '../../engine/event';
@@ -49,6 +49,7 @@ export type Action =
   | { type: 'SET_TAB'; tab: TabId }
   | { type: 'BUILD_FACILITY'; facilityType: string }
   | { type: 'UPGRADE_FACILITY'; facilityId: string }
+  | { type: 'DEMOLISH_FACILITY'; facilityId: string }
   | { type: 'ADOPT_HAMSTER'; hamsterId: string; data: Omit<Hamster, 'livingAt' | 'workingAt' | 'memory' | 'mood' | 'stamina'> }
   | { type: 'ASSIGN_WORK'; hamsterId: string; facilityId: string }
   | { type: 'STOP_WORKING'; hamsterId: string }
@@ -94,6 +95,16 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         game: newGame,
         log: addLog(state, `升级了设施: ${action.facilityId}`, 'upgrade'),
+      };
+    }
+
+    case 'DEMOLISH_FACILITY': {
+      const newGame = demolishFacility(state.game, action.facilityId);
+      if (newGame === state.game) return state;
+      return {
+        ...state,
+        game: newGame,
+        log: addLog(state, `拆除了设施: ${action.facilityId}`, 'demolish'),
       };
     }
 

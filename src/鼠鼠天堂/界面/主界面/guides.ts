@@ -78,10 +78,10 @@ export function getTabGuides(game: GameState): Partial<Record<TabId, string[]>> 
   } else if (hasPlay && hasManagedPlay && hamsters.length > 0 && workingHamsters.length > 0 && game.turn === 0) {
     oTips.push('一切准备就绪! 点击「推进回合」看看会发生什么吧~');
   }
-  // 体力提示
-  const tiredHamsters = hamsters.filter(h => h.workingAt && h.stamina <= 30);
+  // 体力提示（≤35 提前警告，≤25 自动停工）
+  const tiredHamsters = hamsters.filter(h => h.workingAt && h.stamina <= 35);
   if (tiredHamsters.length > 0) {
-    oTips.push(`${tiredHamsters.map(h => h.name).join('、')} 快累了，记得让她们回窝休息~`);
+    oTips.push(`${tiredHamsters.map(h => h.name).join('、')} 体力较低（≤25时自动停工），记得让她们回窝休息~`);
   }
   // 能源溢出提示
   if (game.energy >= game.energyCap * 0.9 && game.energyCap <= 100) {

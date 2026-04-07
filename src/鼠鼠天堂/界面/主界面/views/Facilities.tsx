@@ -3,8 +3,9 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { getTabGuides } from '../guides';
-import { FACILITY_DEFS, getFacilityDef, getUpgradeCost } from '../../../data/facilities';
-import { canBuild, canUpgrade } from '../../../engine/facility';
+import { FACILITY_DEFS, getFacilityDef, getUpgradeCost, getMaintenanceCost } from '../../../data/facilities';
+import { canBuild, canUpgrade, canDemolish, MAX_FACILITY_SLOTS } from '../../../engine/facility';
+import { STAMINA_COST_PER_TURN } from '../../../engine/turn';
 
 const CAT_LABEL: Record<string, { icon: string; name: string }> = {
   play: { icon: '🎡', name: '玩耍区' },
@@ -20,7 +21,8 @@ const Facilities: React.FC = () => {
 
   const facilityEntries = Object.entries(game.facilities);
   const tips = getTabGuides(game).facilities;
-  const totalSlots = FACILITY_DEFS.length;
+  const totalSlots = MAX_FACILITY_SLOTS;
+  const [confirmDemolish, setConfirmDemolish] = useState<string | null>(null);
 
   // 按类别分组
   const byCategory: Record<string, [string, typeof game.facilities[string]][]> = { play: [], living: [], function: [] };
@@ -110,8 +112,10 @@ const Facilities: React.FC = () => {
                     {isExpanded && (
                       <div className="fade-in" style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--color-border)', textAlign: 'left', fontSize: 11 }}>
                         {def?.category === 'play' && def.basePower > 0 && <div>⚡ 产能 +{def.basePower}/回合</div>}
+                        {def?.category === 'play' && <div style={{ color: 'var(--color-text-muted)' }}>🏃 体力消耗 -{STAMINA_COST_PER_TURN}/回合</div>}
+                        {def?.category === 'living' && def.moodRegen > 0 && <div>💝 心情恢复 +{def.moodRegen}/回合 (基础)</div>}
                         {def?.specialEffect && <div style={{ color: 'var(--color-stardust)' }}>🌟 {def.specialEffect}</div>}
-                        {def && <div style={{ color: 'var(--color-text-muted)' }}>维护: ⚡{def.maintenanceCost}/回合</div>}
+                        {def && <div style={{ color: 'var(--color-text-muted)' }}>维护: ⚡{getMaintenanceCost(def, f.level)}/回合{f.level > 1 ? ` (基础${def.maintenanceCost}×${(1 + (f.level - 1) * 0.5).toFixed(1)})` : ''}</div>}
                         {f.level < 3 && cost && (
                           <div style={{ marginTop: 4 }}>
                             <button
@@ -135,6 +139,47 @@ const Facilities: React.FC = () => {
                           return names.length > 0 ? (
                             <div style={{ marginTop: 2, color: 'var(--color-text-muted)' }}>🐹 {names.join('、')}</div>
                           ) : null;
+                        })()}
+                        {/* 拆除按钮 */}
+                        {(() => {
+                          const demolishCheck = canDemolish(game, fId);
+                          return (
+                            <div style={{ marginTop: 6 }}>
+                              {confirmDemolish === fId ? (
+                                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                                  <span style={{ fontSize: 10, color: 'var(--color-negative)' }}>确认拆除？返还 ⚡{def ? Math.floor(def.cost.energy * 0.5) : 0}{def && def.cost.stardust > 0 ? ` ✨${Math.floor(def.cost.stardust * 0.5)}` : ''}</span>
+                                  <button
+                                    className="btn btn-sm"
+                                    style={{ background: 'var(--color-negative)', color: '#fff', fontSize: 10, padding: '2px 8px' }}
+                                    onClick={(e) => { e.stopPropagation(); dispatch({ type: 'DEMOLISH_FACILITY', facilityId: fId }); setConfirmDemolish(null); setExpandedTile(null); }}
+                                  >
+                                    确认
+                                  </button>
+                                  <button
+                                    className="btn btn-sm"
+                                    style={{ fontSize: 10, padding: '2px 8px' }}
+                                    onClick={(e) => { e.stopPropagation(); setConfirmDemolish(null); }}
+                                  >
+                                    取消
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <button
+                                    className="btn btn-sm"
+                                    disabled={!demolishCheck.ok}
+                                    style={{ width: '100%', fontSize: 11, color: 'var(--color-negative)', borderColor: 'var(--color-negative)', background: 'transparent', opacity: demolishCheck.ok ? 1 : 0.5 }}
+                                    onClick={(e) => { e.stopPropagation(); setConfirmDemolish(fId); }}
+                                  >
+                                    🗑 拆除设施
+                                  </button>
+                                  {!demolishCheck.ok && demolishCheck.reason && (
+                                    <div style={{ color: 'var(--color-negative)', marginTop: 2, fontSize: 10 }}>{demolishCheck.reason}</div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          );
                         })()}
                       </div>
                     )}

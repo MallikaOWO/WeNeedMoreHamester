@@ -14,48 +14,44 @@
   }
 _%>
 ---
-变量更新规则:
+<variable_rules>
+可更新字段:
   pending_events:
-    格式: "{ [事件ID]: { description, related_characters, options: { [a/b/c]: { label, energy_delta, stardust_delta, mood_delta, mood_target?, is_silly? } } } }"
-    check:
-      - 每回合生成 2-3 个事件，事件ID格式为 evt_{回合号}{字母}，如 evt_6a
-      - 每个事件 2-3 个选项，标识用 a/b/c
-      - 至少一个稳妥正收益选项；恶搞选项 is_silly: true
-      - energy_delta 负值不超过当前能源 30%
-      - stardust_delta 通常为 0，仅机遇/特殊事件涉及
-      - mood_target 填具体角色ID（如 hamster_1），省略则影响全局
+    格式: "{ [事件ID]: { description, related_characters, options: { [a/b/c]: { label, energy_delta, stardust_delta, mood_delta, mood_target?, is_silly?, buff?, flag_set? } } } }"
+    约束:
+      - 事件ID格式: evt_{回合号}{字母}，如 evt_6a
+      - mood_target 填角色ID（如 hamster_1），省略则影响全局
       - related_characters 填关联角色ID，逗号分隔
 
   hamsters.${鼠鼠ID}.memory:
     格式: "{ [记忆ID]: string }"
-    check:
-      - 只能为 <hamster_profiles> 中已存在的鼠鼠写入记忆，不可为候选/未收养的鼠鼠写入
-      - 记忆ID格式 t{回合号}_{关键词}，如 t6_sneeze
-      - 重要记忆 ID 以 ! 开头，如 !t3_adopted
+    约束:
+      - 只能为 <hamster_profiles> 中已存在的鼠鼠写入，不可为候选/未收养鼠鼠写入
+      - 记忆ID格式: t{回合号}_{关键词}，重要记忆以 ! 开头
       - 一句话概括本回合该角色发生的事
 
   angels.${天使ID}.memory:
     格式: "{ [记忆ID]: string }"
-    check:
+    约束:
       - 仅为本回合涉及的天使写入
       - 格式同鼠鼠记忆
 <% if (needAdoption) { %>
 
   adoption_proposal:
     格式: "{ name, breed, personality, basePower, preference, story }"
-    check:
-      - 本回合需要生成收养提案
-      - breed 使用品种ID（golden, dwarf, milk_tea, pudding, silver_fox, purple, cream, sapphire）
-      - personality 填 1-2 个性格标签，逗号分隔
-      - basePower 范围 3-8
-      - story 1-2 句收养背景
+    约束:
+      - breed: golden / dwarf / milk_tea / pudding / silver_fox / purple / cream / sapphire
+      - personality: 1-2 个性格标签，逗号分隔
+      - basePower: 3-8
+      - story: 1-2 句收养背景
 <% } %>
 
-  _禁止更新:
-    - energy / energyCap / stardust / happiness / turn — 代码结算
-    - hamsters.*.mood / stamina / livingAt / workingAt — 代码管理
-    - angels.*.level / exp / skills — 代码管理
-    - facilities / achievements — 代码管理
+禁止更新:
+  - energy / energyCap / stardust / happiness / turn — 代码结算
+  - hamsters.*.mood / stamina / livingAt / workingAt — 代码管理
+  - angels.*.level / exp / skills — 代码管理
+  - facilities / achievements — 代码管理
 <% if (!needAdoption) { _%>
-    - adoption_proposal — 本回合不生成收养提案
+  - adoption_proposal — 本回合不生成收养提案
 <% } _%>
+</variable_rules>

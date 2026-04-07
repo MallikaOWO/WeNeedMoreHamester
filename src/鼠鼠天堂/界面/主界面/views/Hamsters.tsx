@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { getTabGuides } from '../guides';
 import { getFacilityDef, FACILITY_DEFS } from '../../../data/facilities';
+import { STAMINA_COST_PER_TURN, STAMINA_RESTORE_BASE, MOOD_COST_PER_TURN } from '../../../engine/turn';
 
 const MoodBar: React.FC<{ value: number }> = ({ value }) => (
   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
@@ -127,6 +128,28 @@ const Hamsters: React.FC = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--color-text-muted)' }}>
                     <span>偏好: <span style={{ color: 'var(--color-text)', fontWeight: 600 }}>{(h.preference && FACILITY_DEFS.find(d => d.type === h.preference)?.name) || h.preference || '随遇而安'}</span></span>
                     <span>⚡ 产能: <span style={{ color: 'var(--color-energy)', fontWeight: 700 }}>{h.basePower}</span></span>
+                  </div>
+                  {/* 每回合消耗/恢复 */}
+                  <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px dashed var(--color-border)', fontSize: 11, color: 'var(--color-text-muted)' }}>
+                    {h.workingAt ? (() => {
+                      const wf = game.facilities[h.workingAt!];
+                      const wa = wf?.managedBy ? game.angels[wf.managedBy] : null;
+                      const staCost = STAMINA_COST_PER_TURN + (wa?.manageDomain === 'power' ? 3 : 0);
+                      const lf = h.livingAt ? game.facilities[h.livingAt] : null;
+                      const la = lf?.managedBy ? game.angels[lf.managedBy] : null;
+                      const moodCost = la?.manageDomain === 'life' ? Math.round(MOOD_COST_PER_TURN * 0.5) : MOOD_COST_PER_TURN;
+                      return <span>工作中: 🏃-{staCost}/回合 · 💝-{moodCost}/回合 · 体力≤25时自动停工</span>;
+                    })() : (() => {
+                      const hasCanteen = Object.values(game.facilities).some(f => f.type === 'canteen');
+                      const restore = hasCanteen ? Math.round(STAMINA_RESTORE_BASE * 1.5) : STAMINA_RESTORE_BASE;
+                      const lf = h.livingAt ? game.facilities[h.livingAt] : null;
+                      const lfDef = lf ? getFacilityDef(lf.type) : null;
+                      const la = lf?.managedBy ? game.angels[lf.managedBy] : null;
+                      const moodRegen = lfDef && lfDef.moodRegen > 0
+                        ? Math.round(lfDef.moodRegen * (1 + ((lf?.level ?? 1) - 1) * 0.3) * (la?.manageDomain === 'life' ? 1.3 : 1))
+                        : 0;
+                      return <span>休息中: 🏃+{restore}/回合{moodRegen > 0 ? ` · 💝+${moodRegen}/回合` : ''}</span>;
+                    })()}
                   </div>
                 </div>
 

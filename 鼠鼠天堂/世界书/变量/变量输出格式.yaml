@@ -14,64 +14,38 @@
   }
 _%>
 ---
-回复输出格式:
-  rule:
-    - 回复必须由以下 XML 标签组成，每个部分都包裹在对应标签中
-    - 不要输出标签之外的裸文本
-    - 标签顺序固定：<Narrative> -> <UpdateVariable>
+<output_template>
+回复格式:
+  顺序: <Narrative> -> <UpdateVariable>
+  Narrative: 纯叙事文本，不含任何标记前缀或分类标签
+  UpdateVariable:
+    支持操作: replace / delta / insert / remove / move
+    路径格式: path 以 / 开头（如 "/pending_events/evt_1a"）
+    仅允许更新: pending_events, hamsters.*.memory, angels.*.memory<%= needAdoption ? ', adoption_proposal' : '' %>
+    事件选项可选字段:
+      buff: { type: "类型", target: "目标ID或global", value: 数值, duration: 回合数, description: "描述" }
+        type 可选: production_boost / mood_regen / mood_drain / facility_down / stardust_bonus / stamina_save
+      flag_set: 事件链标记（下回合可触发后续事件）
 
-  sections:
-    Narrative:
-      说明: 叙事内容（事件描述、天使对话、鼠鼠动作描写）
-      格式: |-
-        <Narrative>
-        ${叙事文本，2-4句/事件，温馨治愈基调}
-        </Narrative>
+示例:
+  <Narrative>
+  布丁跑着跑着突然打了个喷嚏，整只鼠从跑轮上飞了出去！棉花慌张地跑过来，围巾都歪了："布丁！你没事吧？"布丁揉了揉鼻子，一脸懵地看着自己飞出三米远的距离，似乎对自己的弹射力很满意。
 
-    UpdateVariable:
-      说明: 变量更新命令，JSON Patch 格式
-      支持操作: replace / delta / insert / remove / move
-      路径格式: path 必须以 / 开头（如 "/pending_events/evt_1a"，不是 "pending_events/evt_1a"）
-      仅允许更新: pending_events, hamsters.*.memory, angels.*.memory<%= needAdoption ? ', adoption_proposal' : '' %>
-      事件选项可选字段:
-        buff: 持续效果（可选），格式 { "type": "类型", "target": "目标ID或global", "value": 数值, "duration": 持续回合, "description": "描述" }
-          type 可选值: production_boost / mood_regen / mood_drain / facility_down / stardust_bonus / stamina_save
-        flag_set: 事件链标记（可选），设置后下回合事件指令会检查此标记以生成后续事件
-      格式: |-
-        <UpdateVariable>
-        <Analysis>$(IN ENGLISH, max 80 words: event count/types, characters involved<%= needAdoption ? ', adoption included' : '' %>)
-        </Analysis>
-        <JSONPatch>
-        [
-          { "op": "insert", "path": "/pending_events/${事件ID}", "value": { ... } },
-          { "op": "insert", "path": "/hamsters/${鼠鼠ID}/memory/${记忆ID}", "value": "..." },
-          { "op": "insert", "path": "/angels/${天使ID}/memory/${记忆ID}", "value": "..." },
-<% if (needAdoption) { _%>
-          { "op": "replace", "path": "/adoption_proposal", "value": { "name": "...", "breed": "...", "personality": "...", "basePower": 5, "preference": "...", "story": "..." } },
-<% } _%>
-          ...
-        ]
-        </JSONPatch>
-        </UpdateVariable>
+  星星突然抬起头，紫色的眼睛闪了闪："……地下……有什么在发光。"她说完又沉默了，但尖帽上的星尘粒子明显比平时活跃得多。螺丝放下扳手凑过来："具体位置呢？"星星缓缓指了指跑轮区的东北角。
+  </Narrative>
 
-  example: |-
-    <Narrative>
-    布丁跑着跑着突然打了个喷嚏，整只鼠从跑轮上飞了出去！棉花慌张地跑过来，围巾都歪了："布丁！你没事吧？"布丁揉了揉鼻子，一脸懵地看着自己飞出三米远的距离，似乎对自己的弹射力很满意。
-
-    星星突然抬起头，紫色的眼睛闪了闪："……地下……有什么在发光。"她说完又沉默了，但尖帽上的星尘粒子明显比平时活跃得多。螺丝放下扳手凑过来："具体位置呢？"星星缓缓指了指跑轮区的东北角。
-    </Narrative>
-
-    <UpdateVariable>
-    <Analysis>
-    Turn 6: 2 daily events. A: hamster_1 sneeze incident (hamster_1, mianhua involved). B: xingxing senses underground glow (xingxing, luosi involved). No adoption.
-    </Analysis>
-    <JSONPatch>
-    [
-      { "op": "insert", "path": "/pending_events/evt_6a", "value": { "description": "布丁从跑轮上飞了出去！", "related_characters": "hamster_1,mianhua", "options": { "a": { "label": "赶紧冲过去接住她", "energy_delta": 5, "stardust_delta": 0, "mood_delta": 10, "mood_target": "hamster_1" }, "b": { "label": "让她体验飞翔的感觉", "energy_delta": 12, "stardust_delta": 0, "mood_delta": -5, "mood_target": "hamster_1" }, "c": { "label": "你也跳上跑轮一起转", "energy_delta": -3, "stardust_delta": 0, "mood_delta": 15, "is_silly": true } } } },
-      { "op": "insert", "path": "/pending_events/evt_6b", "value": { "description": "星星感应到地下有神秘光源", "related_characters": "xingxing,luosi", "options": { "a": { "label": "派螺丝去挖掘", "energy_delta": 0, "stardust_delta": 8, "mood_delta": 0, "flag_set": "underground_glow" }, "b": { "label": "全员寻宝大会！", "energy_delta": -10, "stardust_delta": 3, "mood_delta": 10, "buff": { "type": "mood_regen", "target": "global", "value": 3, "duration": 2, "description": "寻宝大会的欢乐余韵" } }, "c": { "label": "假装没听到", "energy_delta": 0, "stardust_delta": 0, "mood_delta": 0 } } } },
-      { "op": "insert", "path": "/hamsters/hamster_1/memory/t6_sneeze", "value": "从跑轮上飞出去了，主人接住了她" },
-      { "op": "insert", "path": "/angels/xingxing/memory/t6_sense", "value": "感应到地下有神秘光源，向园长报告" },
-      { "op": "insert", "path": "/angels/mianhua/memory/t6_worried", "value": "担心布丁受伤，跑去检查" }
-    ]
-    </JSONPatch>
-    </UpdateVariable>
+  <UpdateVariable>
+  <Analysis>
+  Turn 6: 2 daily events. A: hamster_1 sneeze incident (hamster_1, mianhua). B: xingxing senses underground glow (xingxing, luosi). No adoption.
+  </Analysis>
+  <JSONPatch>
+  [
+    { "op": "insert", "path": "/pending_events/evt_6a", "value": { "description": "布丁从跑轮上飞了出去！", "related_characters": "hamster_1,mianhua", "options": { "a": { "label": "赶紧冲过去接住她", "energy_delta": 5, "stardust_delta": 0, "mood_delta": 10, "mood_target": "hamster_1" }, "b": { "label": "让她体验飞翔的感觉", "energy_delta": 12, "stardust_delta": 0, "mood_delta": -5, "mood_target": "hamster_1" }, "c": { "label": "你也跳上跑轮一起转", "energy_delta": -3, "stardust_delta": 0, "mood_delta": 15, "is_silly": true } } } },
+    { "op": "insert", "path": "/pending_events/evt_6b", "value": { "description": "星星感应到地下有神秘光源", "related_characters": "xingxing,luosi", "options": { "a": { "label": "派螺丝去挖掘", "energy_delta": 0, "stardust_delta": 8, "mood_delta": 0, "flag_set": "underground_glow" }, "b": { "label": "全员寻宝大会！", "energy_delta": -10, "stardust_delta": 3, "mood_delta": 10, "buff": { "type": "mood_regen", "target": "global", "value": 3, "duration": 2, "description": "寻宝大会的欢乐余韵" } }, "c": { "label": "假装没听到", "energy_delta": 0, "stardust_delta": 0, "mood_delta": 0 } } } },
+    { "op": "insert", "path": "/hamsters/hamster_1/memory/t6_sneeze", "value": "从跑轮上飞出去了，主人接住了她" },
+    { "op": "insert", "path": "/angels/xingxing/memory/t6_sense", "value": "感应到地下有神秘光源，向园长报告" },
+    { "op": "insert", "path": "/angels/mianhua/memory/t6_worried", "value": "担心布丁受伤，跑去检查" }
+  ]
+  </JSONPatch>
+  </UpdateVariable>
+</output_template>

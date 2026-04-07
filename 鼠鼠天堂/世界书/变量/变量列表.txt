@@ -1,8 +1,7 @@
-<% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); _%>
-<% var hKeys = Object.keys(hamsters); _%>
-<% var angels = getvar('stat_data.angels', {defaults: {}}); _%>
 <% var turn = getvar('stat_data.turn', {defaults: 0}); _%>
 <% var proposal = getvar('stat_data.adoption_proposal', {defaults: null}); _%>
+<% var hamsters = getvar('stat_data.hamsters', {defaults: {}}); _%>
+<% var hKeys = Object.keys(hamsters); _%>
 <%
   var needAdoption = false;
   if (!proposal) {
@@ -16,42 +15,6 @@
 _%>
 ---
 <current_variable>
-
-<hamster_profiles>
-<% if (hKeys.length > 0) { _%>
-<% hKeys.forEach(function(id) { var h = hamsters[id]; _%>
-<%= id %>:
-  name: <%= h.name %>
-  breed: <%= h.breed %>
-  personality: <%= h.personality %>
-  preference: <%= h.preference %>
-  story: <%= h.story %>
-<% var mem = h.memory || {}; var memKeys = Object.keys(mem); _%>
-<% if (memKeys.length > 0) { _%>
-  memory:
-<% memKeys.forEach(function(mk) { _%>
-    <%= mk %>: <%= mem[mk] %>
-<% }); _%>
-<% } _%>
-<% }); _%>
-<% } else { _%>
-(无鼠居民)
-<% } _%>
-</hamster_profiles>
-
-<angel_memories>
-<% Object.keys(angels).forEach(function(id) { var a = angels[id]; _%>
-<% var mem = a.memory || {}; var memKeys = Object.keys(mem); _%>
-<%= a.name %>[<%= id %>]:
-<% if (memKeys.length > 0) { _%>
-<% memKeys.forEach(function(mk) { _%>
-  <%= mk %>: <%= mem[mk] %>
-<% }); _%>
-<% } else { _%>
-  (无记忆)
-<% } _%>
-<% }); _%>
-</angel_memories>
 
 <pending_events>
 {{format_message_variable::stat_data.pending_events}}

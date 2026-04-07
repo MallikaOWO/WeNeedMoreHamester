@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { useStore } from '../store';
 import { getTabGuides } from '../guides';
-import { getFacilityDef } from '../../../data/facilities';
-import { calcMoodMultiplier, calcAngelMult } from '../../../engine/turn';
+import { getFacilityDef, getMaintenanceCost } from '../../../data/facilities';
+import { calcMoodMultiplier, calcAngelMult, STAMINA_COST_PER_TURN, STAMINA_RESTORE_BASE, LOW_STAMINA_THRESHOLD, MOOD_COST_PER_TURN } from '../../../engine/turn';
 
 interface FacilityBreakdown {
   name: string;
@@ -17,8 +17,6 @@ interface MoodForecast {
   currentAvg: number;
   predictedAvg: number;
 }
-
-const MOOD_COST_PER_TURN = 8;
 
 /** 预估下回合心情变化 */
 function calcMoodForecast(game: ReturnType<typeof useStore>['state']['game']): MoodForecast {
@@ -79,6 +77,33 @@ function calcMoodForecast(game: ReturnType<typeof useStore>['state']['game']): M
   return { hamsterDetails: details, currentAvg, predictedAvg };
 }
 
+interface StaminaForecast {
+  hamsterDetails: { name: string; current: number; delta: number; predicted: number; willStop: boolean }[];
+}
+
+/** 预估下回合体力变化 */
+function calcStaminaForecast(game: ReturnType<typeof useStore>['state']['game']): StaminaForecast {
+  const hasCanteen = Object.values(game.facilities).some(f => f.type === 'canteen');
+  const restoreAmount = hasCanteen ? Math.round(STAMINA_RESTORE_BASE * 1.5) : STAMINA_RESTORE_BASE;
+
+  const details: StaminaForecast['hamsterDetails'] = [];
+  for (const h of Object.values(game.hamsters)) {
+    let delta = 0;
+    if (h.workingAt) {
+      const workFacility = game.facilities[h.workingAt];
+      const workAngel = workFacility?.managedBy ? game.angels[workFacility.managedBy] : null;
+      const extraCost = workAngel?.manageDomain === 'power' ? 3 : 0;
+      delta = -(STAMINA_COST_PER_TURN + extraCost);
+    } else {
+      delta = restoreAmount;
+    }
+    const predicted = Math.max(0, Math.min(100, h.stamina + delta));
+    const willStop = h.workingAt !== null && predicted <= LOW_STAMINA_THRESHOLD;
+    details.push({ name: h.name, current: h.stamina, delta, predicted, willStop });
+  }
+  return { hamsterDetails: details };
+}
+
 /** 计算产能明细 */
 function calcProductionBreakdown(game: ReturnType<typeof useStore>['state']['game']): {
   facilities: FacilityBreakdown[];
@@ -128,7 +153,7 @@ function calcProductionBreakdown(game: ReturnType<typeof useStore>['state']['gam
   let maintenance = 0;
   for (const f of Object.values(game.facilities)) {
     const def = getFacilityDef(f.type);
-    if (def) maintenance += def.maintenanceCost;
+    if (def) maintenance += getMaintenanceCost(def, f.level);
   }
 
   return { facilities, rawTotal, moodMult, finalTotal, maintenance, netTotal: finalTotal - maintenance };
@@ -141,6 +166,7 @@ const Overview: React.FC = () => {
   const game = state.game;
   const production = calcProductionBreakdown(game);
   const moodForecast = calcMoodForecast(game);
+  const staminaForecast = calcStaminaForecast(game);
   const pendingCount = Object.keys(game.pending_events).length;
   const hamsterCount = Object.keys(game.hamsters).length;
   const facilityCount = Object.keys(game.facilities).length;
@@ -164,7 +190,7 @@ const Overview: React.FC = () => {
       {state.narrative && (
         <div className="card narrative-panel">
           <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 4, fontWeight: 600 }}>📖 本回合叙事</div>
-          <div style={{ lineHeight: 1.7, fontSize: 13, color: 'var(--color-text)' }}>{state.narrative}</div>
+          <div style={{ lineHeight: 1.7, fontSize: 13, color: 'var(--color-text)', whiteSpace: 'pre-wrap' }}>{state.narrative}</div>
         </div>
       )}
 
@@ -245,6 +271,17 @@ const Overview: React.FC = () => {
                 {moodForecast.hamsterDetails.map((md, i) => (
                   <div key={i} style={{ color: 'var(--color-text-muted)', paddingLeft: 16 }}>
                     {md.name}: 💝{md.current} {md.delta >= 0 ? '+' : ''}{md.delta} → <span style={{ color: md.delta < 0 ? 'var(--color-negative)' : md.delta > 0 ? 'var(--color-positive)' : 'var(--color-text)' }}>{md.predicted}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {staminaForecast.hamsterDetails.length > 0 && (
+              <div style={{ marginTop: 6, paddingTop: 6, borderTop: '1px dashed var(--color-border)' }}>
+                <div style={{ color: 'var(--color-text-muted)', marginBottom: 3 }}>体力预估</div>
+                {staminaForecast.hamsterDetails.map((sd, i) => (
+                  <div key={i} style={{ color: 'var(--color-text-muted)', paddingLeft: 16 }}>
+                    {sd.name}: 🏃{sd.current} {sd.delta >= 0 ? '+' : ''}{sd.delta} → <span style={{ color: sd.willStop ? 'var(--color-negative)' : sd.delta < 0 ? 'var(--color-text)' : 'var(--color-positive)' }}>{sd.predicted}</span>
+                    {sd.willStop && <span style={{ color: 'var(--color-negative)', marginLeft: 4 }}>⚠停工</span>}
                   </div>
                 ))}
               </div>

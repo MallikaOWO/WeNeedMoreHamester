@@ -1,7 +1,7 @@
 // 1.1 回合结算
 
 import type { GameState, Facility, Hamster } from '../schema';
-import { getFacilityDef } from '../data/facilities';
+import { getFacilityDef, getMaintenanceCost } from '../data/facilities';
 import { fixupFacilityManagers } from './facility';
 import { getPersonalityDef } from '../data/personalities';
 
@@ -64,11 +64,11 @@ function calcFacilityOutput(facility: Facility, hamsters: Record<string, Hamster
 }
 
 /** 体力消耗常量 */
-const STAMINA_COST_PER_TURN = 20;
-const STAMINA_RESTORE_BASE = 15;
-const LOW_STAMINA_THRESHOLD = 25;
+export const STAMINA_COST_PER_TURN = 15;
+export const STAMINA_RESTORE_BASE = 20;
+export const LOW_STAMINA_THRESHOLD = 25;
 /** 工作心情消耗 */
-const MOOD_COST_PER_TURN = 8;
+export const MOOD_COST_PER_TURN = 12;
 
 /** 结算一个回合 */
 export function settleTurn(state: GameState): GameState {
@@ -132,7 +132,7 @@ export function settleTurn(state: GameState): GameState {
   let totalMaintenance = 0;
   for (const f of Object.values(facilities)) {
     const def = getFacilityDef(f.type);
-    if (def) totalMaintenance += def.maintenanceCost;
+    if (def) totalMaintenance += getMaintenanceCost(def, f.level);
   }
   energy = Math.max(0, energy - totalMaintenance);
 

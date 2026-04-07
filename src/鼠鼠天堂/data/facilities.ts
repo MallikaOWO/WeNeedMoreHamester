@@ -212,11 +212,11 @@ export const FACILITY_DEFS: FacilityDef[] = [
     capacity: 0,
     basePower: 0,
     moodRegen: 0,
-    specialEffect: '事件预警+30%',
+    specialEffect: '事件预警·挑战可安全撤退',
     cost: { energy: 100, stardust: 5 },
     requiredAngelLevel: 2,
     upgradeCostMultiplier: 2.5,
-    description: '观察远方，提升事件预警能力',
+    description: '预警事件类型，挑战事件可选择安全撤退',
     maintenanceCost: 5,
   },
   // ── T4 功能设施 ──
@@ -245,6 +245,11 @@ export function getFacilityDef(type: string): FacilityDef | undefined {
 /** 按类别筛选设施 */
 export function getFacilitiesByCategory(category: FacilityDef['category']): FacilityDef[] {
   return FACILITY_DEFS.filter(f => f.category === category);
+}
+
+/** 计算维护费（含等级缩放：Lv.1 ×1.0, Lv.2 ×1.5, Lv.3 ×2.0） */
+export function getMaintenanceCost(def: FacilityDef, level: number): number {
+  return Math.ceil(def.maintenanceCost * (1 + (level - 1) * 0.5));
 }
 
 /** 计算升级费用 */
