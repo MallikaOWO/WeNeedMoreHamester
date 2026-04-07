@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  fetchManifest, isOlderVersion, getDownloadUrl, getUpdateService,
-  type Manifest, type ManifestVersion, type UpdateServiceAPI,
+  fetchManifest, isOlderVersion, getDownloadUrl, getLocalVersion,
+  backupWorldbook, installUpdate, showToast,
+  type Manifest, type ManifestVersion,
 } from '../update';
 import { clearUpdateCache } from '../update-check';
 
@@ -30,11 +31,10 @@ const Settings: React.FC = () => {
     let cancelled = false;
     (async () => {
       try {
-        const [m, service] = await Promise.all([fetchManifest(), getUpdateService()]);
+        const [m, v] = await Promise.all([fetchManifest(), getLocalVersion()]);
         if (cancelled) return;
         setManifest(m);
-        const v = await service.getLocalVersion();
-        if (!cancelled) setLocalVersion(v);
+        setLocalVersion(v);
       } catch (e: any) {
         if (!cancelled) setLoadError(e?.message || '无法获取版本信息');
       }
@@ -48,38 +48,17 @@ const Settings: React.FC = () => {
     setError('');
     setStatus('downloading');
     try {
-      const service = await getUpdateService();
-      await service.backupWorldbook();
-      setStatus('installing');
+      await backupWorldbook();
       const url = getDownloadUrl(version.path);
-
-      // importRawCharacter 会触发角色重载，销毁脚本 iframe，
-      // 导致 installUpdate 的 Promise 永远不会 resolve。
-      // 因此不 await，改为轮询版本号确认更新结果。
-      service.installUpdate(url, version.version);
-
-      const maxWait = 30000;
-      const poll = 1000;
-      let elapsed = 0;
-      while (elapsed < maxWait) {
-        await new Promise(r => setTimeout(r, poll));
-        elapsed += poll;
-        try {
-          const svc = await getUpdateService();
-          const ver = await svc.getLocalVersion();
-          if (ver === version.version) {
-            setStatus('done');
-            svc.toast('success', `已更新到 v${version.version}`);
-            clearUpdateCache();
-            return;
-          }
-        } catch { /* 脚本 iframe 重建中，继续等待 */ }
-      }
-      throw new Error('更新超时');
+      setStatus('installing');
+      await installUpdate(url);
+      setStatus('done');
+      showToast('success', `已更新到 v${version.version}`);
+      clearUpdateCache();
     } catch (e: any) {
       setStatus('error');
       setError(e?.message || '未知错误');
-      try { (await getUpdateService()).toast('error', '更新失败: ' + (e?.message || '未知错误')); } catch {}
+      showToast('error', '更新失败: ' + (e?.message || '未知错误'));
     }
   };
 

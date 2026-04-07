@@ -1,4 +1,7 @@
-// 自动更新 — manifest 获取、版本比较、UpdateService 桥接
+// 自动更新 — manifest 获取、版本比较、TavernHelper 直接调用
+//
+// 所有更新操作直接从 React (message iframe) 通过 window.top.TavernHelper 调用，
+// 避免经过脚本 iframe（importRawCharacter 触发角色重载会销毁脚本 iframe）。
 
 export interface ManifestVersion {
   version: string;
@@ -12,16 +15,18 @@ export interface Manifest {
   versions: ManifestVersion[];
 }
 
-export interface UpdateServiceAPI {
-  getLocalVersion(): Promise<string | null>;
-  backupWorldbook(): Promise<boolean>;
-  installUpdate(downloadUrl: string, version: string): Promise<boolean>;
-  toast(type: 'success' | 'error' | 'info', message: string): void;
-}
-
+const CARD_NAME = '鼠鼠天堂';
 const RAW_BASE = 'https://raw.githubusercontent.com/MallikaOWO/WeNeedMoreHamester/main';
 const MEDIA_BASE = 'https://media.githubusercontent.com/media/MallikaOWO/WeNeedMoreHamester/main';
 const MANIFEST_URL = `${RAW_BASE}/manifest.json`;
+
+function getTavernHelper(): any {
+  const th = (window.top as any)?.TavernHelper;
+  if (!th) throw new Error('TavernHelper 不可用');
+  return th;
+}
+
+// ── manifest ──
 
 export async function fetchManifest(): Promise<Manifest> {
   const resp = await fetch(`${MANIFEST_URL}?t=${Date.now()}`, { cache: 'no-store' });
@@ -44,21 +49,41 @@ export function isOlderVersion(current: string | null, latest: string): boolean 
   return false;
 }
 
-const MAX_WAIT = 5000;
-const POLL_INTERVAL = 200;
+// ── 通过 TavernHelper 直接操作（运行在 message iframe，不受脚本 iframe 销毁影响） ──
 
-export function getUpdateService(): Promise<UpdateServiceAPI> {
-  const top = (window.top ?? window) as any;
-  const service = top.UpdateService as UpdateServiceAPI | undefined;
-  if (service) return Promise.resolve(service);
+export async function getLocalVersion(): Promise<string | null> {
+  try {
+    const th = getTavernHelper();
+    const char = await th.getCharacter(CARD_NAME);
+    return char.version || null;
+  } catch {
+    return null;
+  }
+}
 
-  return new Promise((resolve, reject) => {
-    let elapsed = 0;
-    const timer = setInterval(() => {
-      const s = top.UpdateService as UpdateServiceAPI | undefined;
-      if (s) { clearInterval(timer); resolve(s); return; }
-      elapsed += POLL_INTERVAL;
-      if (elapsed >= MAX_WAIT) { clearInterval(timer); reject(new Error('UpdateService 未加载')); }
-    }, POLL_INTERVAL);
-  });
+export async function backupWorldbook(): Promise<boolean> {
+  try {
+    const th = getTavernHelper();
+    const wbName = th.getCharWorldbookNames('current').primary;
+    if (!wbName) return true;
+    const wb = await th.getWorldbook(wbName);
+    await th.createOrReplaceWorldbook(`${wbName} (更新前备份)`, wb);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function installUpdate(downloadUrl: string): Promise<void> {
+  const resp = await fetch(downloadUrl, { cache: 'no-cache' });
+  if (!resp.ok) throw new Error(`下载失败 (${resp.status})`);
+  const blob = await resp.blob();
+  const th = getTavernHelper();
+  await th.importRawCharacter(CARD_NAME, blob);
+}
+
+export function showToast(type: 'success' | 'error' | 'info', message: string) {
+  try {
+    (window.top as any)?.toastr?.[type]?.(message);
+  } catch { /* 主窗口不可用，静默忽略 */ }
 }
