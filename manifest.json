@@ -1,6 +1,12 @@
 {
-  "latest": "0.6.7",
+  "latest": "0.6.8",
   "versions": [
+    {
+      "version": "0.6.8",
+      "date": "2026-04-07",
+      "changelog": "正式上线自动更新功能。",
+      "path": "release_src/发行角色卡/鼠鼠天堂_v0.6.8.png"
+    },
     {
       "version": "0.6.7",
       "date": "2026-04-07",

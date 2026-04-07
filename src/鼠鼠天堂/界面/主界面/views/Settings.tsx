@@ -127,7 +127,7 @@ const Settings: React.FC = () => {
             background: 'rgba(255,255,255,0.6)', borderRadius: 'var(--radius-sm)',
             border: '1px solid var(--color-energy)',
           }}>
-            更新已安装。请关闭当前对话，开新游戏以使用新版本。
+            更新已安装。请直接刷新酒馆页面以加载新版本，并且刷新前避免其它任何操作。
           </div>
         )}
 
