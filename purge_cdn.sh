@@ -17,7 +17,6 @@ prefix = f'dist/{version}/\u9f20\u9f20\u5929\u5802' if version else 'dist/\u9f20
 
 paths = [
     f'{prefix}/\u754c\u9762/\u4e3b\u754c\u9762/index.html',
-    f'{prefix}/\u754c\u9762/\u4e3b\u754c\u9762/index.js',
     f'{prefix}/\u811a\u672c/\u81ea\u52a8\u66f4\u65b0/index.js',
     f'{prefix}/\u811a\u672c/\u53d8\u91cf\u7ed3\u6784/index.js',
     f'{prefix}/\u811a\u672c/\u9690\u85cf\u697c\u5c42/index.js',

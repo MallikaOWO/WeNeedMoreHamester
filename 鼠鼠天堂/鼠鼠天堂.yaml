@@ -266,7 +266,7 @@
         ```
         <body>
         <script>
-        (async()=>{const p='鼠鼠天堂/界面/主界面/index.html';try{const r=await fetch('http://localhost:6622/'+p);if(!r.ok)throw 0;$('body').html(await r.text())}catch{$('body').load('https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/'+p)}})()
+        (async()=>{const p='鼠鼠天堂/界面/主界面/index.html';try{const r=await fetch('http://localhost:6622/'+p);if(!r.ok)throw 0;$('body').html(await r.text())}catch{const u='https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester/dist/'+p;const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;$('body').html(await r.text())}})()
         </script>
         </body>
         ```
