@@ -25,11 +25,17 @@ const UpdateService = {
   },
 
   async installUpdate(downloadUrl: string, version: string): Promise<boolean> {
+    console.error('[UpdateService] step 1: fetching', downloadUrl);
     const resp = await fetch(downloadUrl, { cache: 'no-cache' });
     if (!resp.ok) throw new Error(`下载失败 (${resp.status})`);
     const blob = await resp.blob();
-    await importRawCharacter(CARD_NAME, blob);
+    console.error('[UpdateService] step 2: downloaded blob, size=', blob.size);
+    console.error('[UpdateService] step 3: calling importRawCharacter...');
+    const importResult = await importRawCharacter(CARD_NAME, blob);
+    console.error('[UpdateService] step 4: importRawCharacter done, result=', importResult);
+    console.error('[UpdateService] step 5: calling replaceCharacter...');
     await replaceCharacter(CARD_NAME, { version });
+    console.error('[UpdateService] step 6: replaceCharacter done, update complete!');
     return true;
   },
 
