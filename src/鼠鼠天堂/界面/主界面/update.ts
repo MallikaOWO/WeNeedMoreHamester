@@ -47,13 +47,14 @@ const MAX_WAIT = 5000;
 const POLL_INTERVAL = 200;
 
 export function getUpdateService(): Promise<UpdateServiceAPI> {
-  const service = (window as any).UpdateService as UpdateServiceAPI | undefined;
+  const top = (window.top ?? window) as any;
+  const service = top.UpdateService as UpdateServiceAPI | undefined;
   if (service) return Promise.resolve(service);
 
   return new Promise((resolve, reject) => {
     let elapsed = 0;
     const timer = setInterval(() => {
-      const s = (window as any).UpdateService as UpdateServiceAPI | undefined;
+      const s = top.UpdateService as UpdateServiceAPI | undefined;
       if (s) { clearInterval(timer); resolve(s); return; }
       elapsed += POLL_INTERVAL;
       if (elapsed >= MAX_WAIT) { clearInterval(timer); reject(new Error('UpdateService 未加载')); }
