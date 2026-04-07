@@ -43,11 +43,20 @@ export function isOlderVersion(current: string | null, latest: string): boolean 
   return false;
 }
 
-let _servicePromise: Promise<UpdateServiceAPI> | null = null;
+const MAX_WAIT = 5000;
+const POLL_INTERVAL = 200;
 
 export function getUpdateService(): Promise<UpdateServiceAPI> {
-  if (!_servicePromise) {
-    _servicePromise = (window as any).waitGlobalInitialized('UpdateService') as Promise<UpdateServiceAPI>;
-  }
-  return _servicePromise;
+  const service = (window as any).UpdateService as UpdateServiceAPI | undefined;
+  if (service) return Promise.resolve(service);
+
+  return new Promise((resolve, reject) => {
+    let elapsed = 0;
+    const timer = setInterval(() => {
+      const s = (window as any).UpdateService as UpdateServiceAPI | undefined;
+      if (s) { clearInterval(timer); resolve(s); return; }
+      elapsed += POLL_INTERVAL;
+      if (elapsed >= MAX_WAIT) { clearInterval(timer); reject(new Error('UpdateService 未加载')); }
+    }, POLL_INTERVAL);
+  });
 }
