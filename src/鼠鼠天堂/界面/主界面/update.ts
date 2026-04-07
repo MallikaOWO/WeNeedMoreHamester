@@ -19,8 +19,9 @@ export interface UpdateServiceAPI {
   toast(type: 'success' | 'error' | 'info', message: string): void;
 }
 
-const MANIFEST_URL = 'https://raw.githubusercontent.com/MallikaOWO/WeNeedMoreHamester/main/manifest.json';
-const CDN_BASE = 'https://cdn.jsdelivr.net/gh/MallikaOWO/WeNeedMoreHamester';
+const RAW_BASE = 'https://raw.githubusercontent.com/MallikaOWO/WeNeedMoreHamester/main';
+const MEDIA_BASE = 'https://media.githubusercontent.com/media/MallikaOWO/WeNeedMoreHamester/main';
+const MANIFEST_URL = `${RAW_BASE}/manifest.json`;
 
 export async function fetchManifest(): Promise<Manifest> {
   const resp = await fetch(`${MANIFEST_URL}?t=${Date.now()}`, { cache: 'no-store' });
@@ -29,7 +30,7 @@ export async function fetchManifest(): Promise<Manifest> {
 }
 
 export function getDownloadUrl(relativePath: string): string {
-  return `${CDN_BASE}/${relativePath}`;
+  return `${MEDIA_BASE}/${relativePath}`;
 }
 
 export function isOlderVersion(current: string | null, latest: string): boolean {
