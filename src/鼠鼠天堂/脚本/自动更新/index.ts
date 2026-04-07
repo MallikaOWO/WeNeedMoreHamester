@@ -24,15 +24,13 @@ const UpdateService = {
     }
   },
 
-  async installUpdate(downloadUrl: string, version: string): Promise<boolean> {
+  async installUpdate(downloadUrl: string, _version: string): Promise<boolean> {
     const resp = await fetch(downloadUrl, { cache: 'no-cache' });
     if (!resp.ok) throw new Error(`下载失败 (${resp.status})`);
     const blob = await resp.blob();
+    // importRawCharacter 会触发角色重载，销毁当前脚本 iframe，
+    // 之后的代码不会执行。PNG 本身已包含正确版本号。
     await importRawCharacter(CARD_NAME, blob);
-    await updateCharacterWith(CARD_NAME, char => {
-      char.version = version;
-      return char;
-    });
     return true;
   },
 

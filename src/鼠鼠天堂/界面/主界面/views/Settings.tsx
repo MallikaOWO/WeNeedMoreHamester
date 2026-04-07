@@ -52,10 +52,30 @@ const Settings: React.FC = () => {
       await service.backupWorldbook();
       setStatus('installing');
       const url = getDownloadUrl(version.path);
-      await service.installUpdate(url, version.version);
-      setStatus('done');
-      service.toast('success', `已更新到 v${version.version}`);
-      clearUpdateCache();
+
+      // importRawCharacter 会触发角色重载，销毁脚本 iframe，
+      // 导致 installUpdate 的 Promise 永远不会 resolve。
+      // 因此不 await，改为轮询版本号确认更新结果。
+      service.installUpdate(url, version.version);
+
+      const maxWait = 30000;
+      const poll = 1000;
+      let elapsed = 0;
+      while (elapsed < maxWait) {
+        await new Promise(r => setTimeout(r, poll));
+        elapsed += poll;
+        try {
+          const svc = await getUpdateService();
+          const ver = await svc.getLocalVersion();
+          if (ver === version.version) {
+            setStatus('done');
+            svc.toast('success', `已更新到 v${version.version}`);
+            clearUpdateCache();
+            return;
+          }
+        } catch { /* 脚本 iframe 重建中，继续等待 */ }
+      }
+      throw new Error('更新超时');
     } catch (e: any) {
       setStatus('error');
       setError(e?.message || '未知错误');
