@@ -30,6 +30,8 @@ export interface FacilityDef {
   maintenanceCost: number;
   /** 建造时增加的能源上限（可选） */
   energyCapBonus?: number;
+  /** 建造时增加的设施栏位上限（可选） */
+  slotBonus?: number;
 }
 
 export const FACILITY_DEFS: FacilityDef[] = [
@@ -172,6 +174,22 @@ export const FACILITY_DEFS: FacilityDef[] = [
     description: '扩展能源上限，能存更多电力',
     maintenanceCost: 3,
     energyCapBonus: 100,
+  },
+  {
+    type: 'blueprint_office',
+    name: '蓝图规划室',
+    category: 'function',
+    manageDomain: 'any',
+    capacity: 0,
+    basePower: 0,
+    moodRegen: 0,
+    specialEffect: '设施栏位+3',
+    cost: { energy: 80, stardust: 5 },
+    requiredAngelLevel: 1,
+    upgradeCostMultiplier: 2.5,
+    description: '规划乐园扩建，解锁更多设施栏位',
+    maintenanceCost: 3,
+    slotBonus: 3,
   },
   {
     type: 'canteen',

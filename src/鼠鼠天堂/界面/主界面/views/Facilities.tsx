@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { getTabGuides } from '../guides';
 import { FACILITY_DEFS, getFacilityDef, getUpgradeCost, getMaintenanceCost } from '../../../data/facilities';
-import { canBuild, canUpgrade, canDemolish, MAX_FACILITY_SLOTS } from '../../../engine/facility';
+import { canBuild, canUpgrade, canDemolish, getMaxFacilitySlots } from '../../../engine/facility';
 import { STAMINA_COST_PER_TURN } from '../../../engine/turn';
 
 const CAT_LABEL: Record<string, { icon: string; name: string }> = {
@@ -21,7 +21,7 @@ const Facilities: React.FC = () => {
 
   const facilityEntries = Object.entries(game.facilities);
   const tips = getTabGuides(game).facilities;
-  const totalSlots = MAX_FACILITY_SLOTS;
+  const totalSlots = getMaxFacilitySlots(game);
   const [confirmDemolish, setConfirmDemolish] = useState<string | null>(null);
 
   // 按类别分组
@@ -106,7 +106,8 @@ const Facilities: React.FC = () => {
                       Lv.{f.level} · {f.capacity > 0 ? `🐹${occupantCount}/${f.capacity}` : '—'}
                     </div>
                     {manager && <div style={{ fontSize: 10, color: 'var(--color-stardust)' }}>👼 {manager}</div>}
-                    {!manager && <div style={{ fontSize: 10, color: 'var(--color-negative)' }}>⚠ 无天使</div>}
+                    {!manager && def?.manageDomain !== 'any' && <div style={{ fontSize: 10, color: 'var(--color-negative)' }}>⚠ 无天使</div>}
+                    {!manager && def?.manageDomain === 'any' && <div style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>自动运作</div>}
 
                     {/* 展开详情 */}
                     {isExpanded && (

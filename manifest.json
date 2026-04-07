@@ -1,6 +1,12 @@
 {
-  "latest": "0.6.8",
+  "latest": "0.6.9",
   "versions": [
+    {
+      "version": "0.6.9",
+      "date": "2026-04-07",
+      "changelog": "增加新建筑，允许扩充建筑栏位",
+      "path": "release_src/发行角色卡/鼠鼠天堂_v0.6.9.png"
+    },
     {
       "version": "0.6.8",
       "date": "2026-04-07",

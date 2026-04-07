@@ -14,8 +14,9 @@ export function canBuild(state: GameState, facilityType: string): { ok: boolean;
   if (!def) return { ok: false, reason: '未知设施类型' };
 
   // 栏位上限检查
-  if (Object.keys(state.facilities).length >= MAX_FACILITY_SLOTS) {
-    return { ok: false, reason: `设施栏位已满（上限${MAX_FACILITY_SLOTS}个），请先拆除旧设施` };
+  const maxSlots = getMaxFacilitySlots(state);
+  if (Object.keys(state.facilities).length >= maxSlots) {
+    return { ok: false, reason: `设施栏位已满（上限${maxSlots}个），请先拆除旧设施或建造蓝图规划室` };
   }
 
   // 资源检查
@@ -126,8 +127,18 @@ export function upgradeFacility(state: GameState, facilityId: string): GameState
   };
 }
 
-/** 设施栏位上限 */
-export const MAX_FACILITY_SLOTS = 8;
+/** 基础设施栏位上限 */
+export const BASE_FACILITY_SLOTS = 8;
+
+/** 计算当前设施栏位上限（基础 + 已建设施的 slotBonus） */
+export function getMaxFacilitySlots(state: GameState): number {
+  let bonus = 0;
+  for (const f of Object.values(state.facilities)) {
+    const def = getFacilityDef(f.type);
+    if (def?.slotBonus) bonus += def.slotBonus;
+  }
+  return BASE_FACILITY_SLOTS + bonus;
+}
 
 /** 检查是否可以拆除设施 */
 export function canDemolish(state: GameState, facilityId: string): { ok: boolean; reason?: string } {
